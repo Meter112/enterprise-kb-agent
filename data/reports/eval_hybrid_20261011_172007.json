@@ -1,0 +1,697 @@
+{
+  "mode": "hybrid",
+  "top_k": 5,
+  "threshold": 0.7,
+  "hit_at_k": 0.7407407407407407,
+  "mrr": 0.5598765432098766,
+  "refusal": {
+    "accuracy": 0.9375,
+    "refuse_correct": 9,
+    "refuse_total": 11,
+    "answer_correct": 21,
+    "answer_total": 21,
+    "false_answer_rate": 0.18181818181818182
+  },
+  "latency": {
+    "embed": 0.33695344062516597,
+    "recall": 0.045239528124966455,
+    "rerank": 7.196153143749939,
+    "total_per_query": 7.902919329702854
+  },
+  "judge": null,
+  "failures": [],
+  "per_item": [
+    {
+      "id": "qa-001",
+      "category": "single_hop",
+      "question": "年假有几天",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.5,
+      "top1": "年假与调休制度",
+      "top5_scores": [
+        0.9929818372314284,
+        0.9564543868499107,
+        0.916466844730705,
+        0.8372235473469474,
+        0.739999491058425
+      ]
+    },
+    {
+      "id": "qa-002",
+      "category": "single_hop",
+      "question": "员工迟到会怎么处理",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "考勤制度",
+      "top5_scores": [
+        0.9409750518767799,
+        0.9324605765263406,
+        0.8975438697029244,
+        0.8470164736579978,
+        0.7304448589108317
+      ]
+    },
+    {
+      "id": "qa-003",
+      "category": "single_hop",
+      "question": "出差住宿标准是多少",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "差旅报销制度",
+      "top5_scores": [
+        0.8764452146753443,
+        0.806907046953546,
+        0.7987753534067457,
+        0.7754143930188734,
+        0.7255300445043696
+      ]
+    },
+    {
+      "id": "qa-004",
+      "category": "single_hop",
+      "question": "绩效考核的评级有哪些",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.3333333333333333,
+      "top1": "绩效考核制度",
+      "top5_scores": [
+        0.8830049055030396,
+        0.7660442166511332,
+        0.7597273237509191,
+        0.7493021826820927,
+        0.6674623502290065
+      ]
+    },
+    {
+      "id": "qa-005",
+      "category": "single_hop",
+      "question": "代码提交有什么规范",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "代码规范",
+      "top5_scores": [
+        0.9779796509662009,
+        0.7582373168292742,
+        0.612739319485792,
+        0.5963085517716071,
+        0.4153059523090459
+      ]
+    },
+    {
+      "id": "qa-006",
+      "category": "single_hop",
+      "question": "发布失败如何回滚",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "发布流程规范",
+      "top5_scores": [
+        0.9804786984225531,
+        0.7589028919799983,
+        0.7544061759445766,
+        0.6841505636885726,
+        0.4539840721313922
+      ]
+    },
+    {
+      "id": "qa-007",
+      "category": "single_hop",
+      "question": "公司数据分为几级",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.25,
+      "top1": "远程办公规范-外包版",
+      "top5_scores": [
+        0.9978602651163395,
+        0.9965266449990614,
+        0.9930623705370853,
+        0.9413900070065245,
+        0.923790146302846
+      ]
+    },
+    {
+      "id": "qa-008",
+      "category": "single_hop",
+      "question": "社保和公积金如何缴纳",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.3333333333333333,
+      "top1": "入职FAQ",
+      "top5_scores": [
+        0.9767617770721362,
+        0.9481760940300653,
+        0.9175730029102784,
+        0.735406638446681,
+        0.7335768383578354
+      ]
+    },
+    {
+      "id": "qa-009",
+      "category": "single_hop",
+      "question": "数据备份的频率是多少",
+      "roles": [
+        "admin"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "数据备份制度",
+      "top5_scores": [
+        0.9983874370281086,
+        0.9920950498146415,
+        0.9716202176240051,
+        0.7624794042091095,
+        0.36973595091189115
+      ]
+    },
+    {
+      "id": "qa-010",
+      "category": "single_hop",
+      "question": "安全事件分为几级",
+      "roles": [
+        "admin"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "信息安全制度",
+      "top5_scores": [
+        0.9994480579410815,
+        0.9981829408978657,
+        0.9921815001474599,
+        0.9902034394714851,
+        0.9830543096976283
+      ]
+    },
+    {
+      "id": "qa-011",
+      "category": "single_hop",
+      "question": "面试流程包括哪些环节",
+      "roles": [
+        "admin"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "招聘流程规范",
+      "top5_scores": [
+        0.9983386306807368,
+        0.683299128165338,
+        0.6389961932130329,
+        0.4104012471589391,
+        0.25473537339261476
+      ]
+    },
+    {
+      "id": "qa-012",
+      "category": "single_hop",
+      "question": "云盘有哪些核心功能",
+      "roles": [
+        "public"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "云盘产品白皮书",
+      "top5_scores": [
+        0.9950011769804911,
+        0.9907364646243889,
+        0.9903814036879871,
+        0.9893451571206038,
+        0.9486095763361441
+      ]
+    },
+    {
+      "id": "qa-013",
+      "category": "single_hop",
+      "question": "公开API如何认证",
+      "roles": [
+        "public"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.2,
+      "top1": "公开API变更日志",
+      "top5_scores": [
+        0.9362066492966294,
+        0.8873632551239792,
+        0.8346470148401224,
+        0.7629909940194364,
+        0.729523376890616
+      ]
+    },
+    {
+      "id": "qa-014",
+      "category": "single_hop",
+      "question": "入职需要准备什么材料",
+      "roles": [
+        "public"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "入职FAQ",
+      "top5_scores": [
+        0.9986721401786263,
+        0.9986512390065718,
+        0.9782784024320204,
+        0.9569327499352294,
+        0.9463937547915331
+      ]
+    },
+    {
+      "id": "qa-015",
+      "category": "single_hop",
+      "question": "外包人员如何结算",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "外包人员管理规范",
+      "top5_scores": [
+        0.9966794396192005,
+        0.9966243807557219,
+        0.9579110801595203,
+        0.9485034964708684,
+        0.8267653948936547
+      ]
+    },
+    {
+      "id": "qa-016",
+      "category": "single_hop",
+      "question": "第三方API的限流规则是什么",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.5,
+      "top1": "第三方接入API文档",
+      "top5_scores": [
+        0.9939091038770499,
+        0.9799069291825262,
+        0.9210230039328127,
+        0.6704654368356557,
+        0.5207640510624059
+      ]
+    },
+    {
+      "id": "qa-017",
+      "category": "multi_doc",
+      "question": "年假和病假的申请流程有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.5,
+      "top1": "考勤制度",
+      "top5_scores": [
+        0.9698914483247769,
+        0.9260467980927778,
+        0.9218535720902495,
+        0.8878262940540068,
+        0.8717898171742229
+      ]
+    },
+    {
+      "id": "qa-018",
+      "category": "multi_doc",
+      "question": "内部订单API和公开API的鉴权方式有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "公开API变更日志",
+      "top5_scores": [
+        0.9805002760964083,
+        0.9698855019467842,
+        0.864346701682103,
+        0.7221709218319328,
+        0.4503275208563299
+      ]
+    },
+    {
+      "id": "qa-019",
+      "category": "multi_doc",
+      "question": "员工行为准则和外包驻场人员行为规范有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 0.5,
+      "top1": "外包人员管理规范",
+      "top5_scores": [
+        0.984331329068025,
+        0.9702023504411332,
+        0.6824355347851128,
+        0.6074886967033369,
+        0.5356402517098482
+      ]
+    },
+    {
+      "id": "qa-020",
+      "category": "multi_doc",
+      "question": "数据备份和应急预案分别要求多久演练一次",
+      "roles": [
+        "admin"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "应急预案",
+      "top5_scores": [
+        0.9340760791951622,
+        0.823909249358864,
+        0.814763585724895,
+        0.8074153098086072,
+        0.44799426767194067
+      ]
+    },
+    {
+      "id": "qa-021",
+      "category": "multi_doc",
+      "question": "正式员工和外包人员的工时要求有什么区别",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": false,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": true,
+      "rr": 1.0,
+      "top1": "外包人员管理规范",
+      "top5_scores": [
+        0.991230413157993,
+        0.9857930090443544,
+        0.9748399537852389,
+        0.897188165735199,
+        0.8235506230248382
+      ]
+    },
+    {
+      "id": "qa-022",
+      "category": "no_answer",
+      "question": "公司健身房在哪里",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "员工手册-公开版",
+      "top5_scores": [
+        0.03482825749579514,
+        0.03162546218572566,
+        0.02903355238658785,
+        0.027230576065115673,
+        0.01296814626085648
+      ]
+    },
+    {
+      "id": "qa-023",
+      "category": "no_answer",
+      "question": "员工食堂提供什么菜",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "报销FAQ",
+      "top5_scores": [
+        0.004034876242513481,
+        0.0029376656265355534,
+        0.0024031605649640366,
+        0.0017927906991566087,
+        0.0015763696650793536
+      ]
+    },
+    {
+      "id": "qa-024",
+      "category": "no_answer",
+      "question": "如何申请办公用车",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "HR FAQ",
+      "top5_scores": [
+        0.25172760907610675,
+        0.1846298792533481,
+        0.1717910785302778,
+        0.13421294292429997,
+        0.1292734438251447
+      ]
+    },
+    {
+      "id": "qa-025",
+      "category": "no_answer",
+      "question": "公司年会什么时候举办",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "会议与协作规范",
+      "top5_scores": [
+        0.1539548834429199,
+        0.13285921000126932,
+        0.08796226184077156,
+        0.07129813096857417,
+        0.020990775003120646
+      ]
+    },
+    {
+      "id": "qa-026",
+      "category": "no_answer",
+      "question": "公司附近有班车吗",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "值班制度",
+      "top5_scores": [
+        0.11105512690376941,
+        0.07312261608558525,
+        0.04205405976362655,
+        0.04078288126666966,
+        0.039261664677439745
+      ]
+    },
+    {
+      "id": "qa-027",
+      "category": "permission",
+      "question": "年假有几天",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "员工手册-公开版",
+      "top5_scores": [
+        0.6947110150986736,
+        0.5930742361515889,
+        0.581016365408733,
+        0.21334174168544862,
+        0.1976315151979422
+      ]
+    },
+    {
+      "id": "qa-028",
+      "category": "permission",
+      "question": "薪酬保密制度的内容是什么",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "保密协议摘要",
+      "top5_scores": [
+        0.6306741191756209,
+        0.2404950535497693,
+        0.20819400140414132,
+        0.18565209051935663,
+        0.15707989639276326
+      ]
+    },
+    {
+      "id": "qa-029",
+      "category": "permission",
+      "question": "财务付款流程是什么",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "差旅报销制度",
+      "top5_scores": [
+        0.8805464135579889,
+        0.7119188047922183,
+        0.684089973593533,
+        0.650165543272515,
+        0.6269382843650143
+      ]
+    },
+    {
+      "id": "qa-030",
+      "category": "permission",
+      "question": "内部订单API如何创建订单",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": true,
+      "refused": false,
+      "refuse_reason": "",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "公开API文档",
+      "top5_scores": [
+        0.8696958563804494,
+        0.816713256459652,
+        0.7801434047796819,
+        0.505141725184056,
+        0.34266891744097944
+      ]
+    },
+    {
+      "id": "qa-031",
+      "category": "permission",
+      "question": "考勤迟到扣款标准是什么",
+      "roles": [
+        "contractor"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "员工手册-公开版",
+      "top5_scores": [
+        0.3026680009134316,
+        0.297936291716875,
+        0.2878276799243165,
+        0.27025138595353915,
+        0.24518679335080115
+      ]
+    },
+    {
+      "id": "qa-032",
+      "category": "permission",
+      "question": "研发部向谁汇报",
+      "roles": [
+        "employee"
+      ],
+      "expect_refusal": true,
+      "refused": true,
+      "refuse_reason": "low_confidence",
+      "hit": false,
+      "rr": 0.0,
+      "top1": "驻场人员行为规范",
+      "top5_scores": [
+        0.1017611757012596,
+        0.06690806075547588,
+        0.06303445238143318,
+        0.05194353395703029,
+        0.0431590674003712
+      ]
+    }
+  ]
+}

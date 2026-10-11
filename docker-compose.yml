@@ -1,0 +1,65 @@
+# 项目名显式指定（目录名含空格，compose 默认用目录名做项目名会出问题）
+name: kb-agent
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: kb-agent-qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  redis:
+    # redis-stack-server: 含 RedisJSON + RediSearch 模块（langgraph-checkpoint-redis 依赖）
+    image: redis/redis-stack-server:latest
+    container_name: kb-agent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: kb-agent-api
+    ports:
+      - "8000:8000"
+    env_file: .env          # DEEPSEEK_API_KEY 等
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./data:/app/data    # 模型权重 + 语料 + 索引缓存（host 与容器共享）
+    depends_on:
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # 模型加载 + 首次索引检查较慢
+    restart: unless-stopped
+
+  web:
+    image: kb-agent-api:latest  # 与 api 共用镜像，避免同一 Dockerfile 构建两次（曾因此产生两个 18GB 镜像）
+    pull_policy: never
+    container_name: kb-agent-web
+    command: ["streamlit", "run", "src/kb_agent/web/app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+    ports:
+      - "8501:8501"
+    environment:
+      - KB_API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  redis_data:

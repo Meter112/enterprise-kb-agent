@@ -1,0 +1,479 @@
+{
+  "meta": {
+    "version": 1,
+    "total": 32,
+    "by_category": {
+      "single_hop": 16,
+      "multi_doc": 5,
+      "no_answer": 5,
+      "permission": 6
+    },
+    "gold_total": 85
+  },
+  "items": [
+    {
+      "id": "qa-001",
+      "category": "single_hop",
+      "question": "年假有几天",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "年假天数与工龄对照",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "5c1633a2-a478-5b34-a29e-cc1210a456e8",
+        "88492d1d-21f4-5c5f-b87e-19b81d956396",
+        "f9a8f1d2-a544-58c0-ae28-a211b7a162cd"
+      ]
+    },
+    {
+      "id": "qa-002",
+      "category": "single_hop",
+      "question": "员工迟到会怎么处理",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "迟到扣款阶梯",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "1bab6b3b-efe5-596c-b7fc-c79ad1b367a0",
+        "53a29290-7ecd-5339-a019-823df11e090b",
+        "a9e6c3ad-3d63-54b1-aeb7-eb3f55edea34"
+      ]
+    },
+    {
+      "id": "qa-003",
+      "category": "single_hop",
+      "question": "出差住宿标准是多少",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "城市等级住宿标准",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "c31e66f0-4ea4-500f-9cd3-7f0944508397",
+        "fcae495f-eac6-5795-b0aa-843787b722b0"
+      ]
+    },
+    {
+      "id": "qa-004",
+      "category": "single_hop",
+      "question": "绩效考核的评级有哪些",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "评级与系数",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "6ce1744b-a1aa-55c9-b5ec-406424815004",
+        "e19b422c-348e-5186-8abc-a78ad885f81b"
+      ]
+    },
+    {
+      "id": "qa-005",
+      "category": "single_hop",
+      "question": "代码提交有什么规范",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "提交规范",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "9c1d28b4-9a48-56f9-b97a-aef783659e6e",
+        "cadd3ad7-7c66-54ca-8bfa-f8eb4859feb9"
+      ]
+    },
+    {
+      "id": "qa-006",
+      "category": "single_hop",
+      "question": "发布失败如何回滚",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "回滚流程步骤",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "4530c0ad-a056-5e76-af2b-8c703fbfb0f6",
+        "77343af9-4706-5810-a1bd-376159edaa4a"
+      ]
+    },
+    {
+      "id": "qa-007",
+      "category": "single_hop",
+      "question": "公司数据分为几级",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "公开/内部/机密/绝密",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "49aaa1f3-91ea-5033-b53c-b4734bbe5c0a"
+      ]
+    },
+    {
+      "id": "qa-008",
+      "category": "single_hop",
+      "question": "社保和公积金如何缴纳",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "缴纳比例与时间",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "1aea11f6-4136-5e02-a5a3-a3279958a3f5",
+        "a830fbb0-0847-584d-a45d-c904bd288c41",
+        "f3fee467-04fb-5e3a-9757-e5c7d67efbde"
+      ]
+    },
+    {
+      "id": "qa-009",
+      "category": "single_hop",
+      "question": "数据备份的频率是多少",
+      "roles": [
+        "admin"
+      ],
+      "answer_hint": "备份频率对照",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "8710cbda-f743-5456-aefd-a4eb1d768373",
+        "eed50b93-f2b6-5dae-b24c-208b5c9b98e1"
+      ]
+    },
+    {
+      "id": "qa-010",
+      "category": "single_hop",
+      "question": "安全事件分为几级",
+      "roles": [
+        "admin"
+      ],
+      "answer_hint": "L1-L4 分级",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "73eb2f99-4195-5cd0-ac90-a726137dd37c",
+        "74d9de23-c729-5b5e-aef4-796c0cd6c0ec",
+        "a1a7d2f1-4415-5003-a79b-ff26da9f09d9"
+      ]
+    },
+    {
+      "id": "qa-011",
+      "category": "single_hop",
+      "question": "面试流程包括哪些环节",
+      "roles": [
+        "admin"
+      ],
+      "answer_hint": "面试轮次",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "57cebd6f-6f41-5c63-a6ef-6e0e77e3e950",
+        "da6072af-7853-51ea-b247-e1ceb3a503c0"
+      ]
+    },
+    {
+      "id": "qa-012",
+      "category": "single_hop",
+      "question": "云盘有哪些核心功能",
+      "roles": [
+        "public"
+      ],
+      "answer_hint": "核心功能列表",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "36cba5b8-07f4-51cd-8f56-8fa485dc593f",
+        "7c7ec5e5-17a0-5c5a-9b03-69245a87d68c"
+      ]
+    },
+    {
+      "id": "qa-013",
+      "category": "single_hop",
+      "question": "公开API如何认证",
+      "roles": [
+        "public"
+      ],
+      "answer_hint": "认证方式",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "a642c3b2-85e7-5a56-86d5-c8282194ae65",
+        "bbf44a9c-0837-543f-ae50-e4089a764284",
+        "ce310730-5298-5813-b1d2-f0c9018ec6e5"
+      ]
+    },
+    {
+      "id": "qa-014",
+      "category": "single_hop",
+      "question": "入职需要准备什么材料",
+      "roles": [
+        "public"
+      ],
+      "answer_hint": "材料清单",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "025b9ec2-3f56-5eb3-95dd-36005206cc21",
+        "059cd1ef-1528-5983-98ea-a47aa03a4ae4",
+        "19397598-dbb9-5fa4-8ae0-4e9f5f370979",
+        "2a5a84f9-f32e-5790-aabc-3f9db15a25ae",
+        "9f2d3144-66ed-52bd-ab34-dfb9ac0d259b"
+      ]
+    },
+    {
+      "id": "qa-015",
+      "category": "single_hop",
+      "question": "外包人员如何结算",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "结算周期",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "a115b08b-023e-5716-af41-ec38157be348",
+        "eee92c90-ca58-5b14-ba36-9df9ea46aa6c"
+      ]
+    },
+    {
+      "id": "qa-016",
+      "category": "single_hop",
+      "question": "第三方API的限流规则是什么",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "限流表格",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "0b0fd6e2-2048-5202-8bb3-293a31c59749",
+        "3a662c5d-6cd7-5ba7-b1bf-a3965867af63",
+        "4a18d813-ad3a-54e7-96f2-1884b1be1b1d",
+        "4b86a057-d50f-56f1-af3e-47ccf1a83e71",
+        "eb648cce-4beb-56b2-b662-1247959b788e",
+        "f7c164c0-3716-508b-9a97-8ebfb81ce8c9",
+        "fb814890-7e4f-5246-a1da-9d51acbcdb21",
+        "fc738f4c-209a-5e9b-be9a-0466782c9198"
+      ]
+    },
+    {
+      "id": "qa-017",
+      "category": "multi_doc",
+      "question": "年假和病假的申请流程有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "年假需提前申请、病假可事后补交（考勤制度 vs 年假与调休制度）",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "19fbde3f-e829-5c93-bac3-a02f3665c90e",
+        "a9e6c3ad-3d63-54b1-aeb7-eb3f55edea34",
+        "d05eda1c-23c6-5cf5-8688-ccb24d1a28be"
+      ]
+    },
+    {
+      "id": "qa-018",
+      "category": "multi_doc",
+      "question": "内部订单API和公开API的鉴权方式有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "内部鉴权 vs 公开认证",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "49940d55-62f0-5b76-b704-e50fd5348dfc",
+        "59b68e80-23ee-5ff3-ac0c-03a980a25857",
+        "a642c3b2-85e7-5a56-86d5-c8282194ae65",
+        "bbf44a9c-0837-543f-ae50-e4089a764284",
+        "ce310730-5298-5813-b1d2-f0c9018ec6e5"
+      ]
+    },
+    {
+      "id": "qa-019",
+      "category": "multi_doc",
+      "question": "员工行为准则和外包驻场人员行为规范有什么不同",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "两份规范的差异",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "442d69bf-2e67-5600-a43c-460ba8653447",
+        "586f6147-3ca7-5240-b6ef-c9337f4e5189",
+        "ae99d446-fa56-5718-b005-9508d44762cb",
+        "bc82ff61-6eb4-5d58-8c66-287247a03c7c",
+        "d91fbdc4-7977-5e8f-9a45-871669021a91",
+        "d9a2b34c-6aaf-5c4b-a273-8d1866a9524d"
+      ]
+    },
+    {
+      "id": "qa-020",
+      "category": "multi_doc",
+      "question": "数据备份和应急预案分别要求多久演练一次",
+      "roles": [
+        "admin"
+      ],
+      "answer_hint": "备份恢复演练 vs 应急演练频率",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "1ee9643f-c36b-5ba6-b614-107231c5ab09",
+        "6830e53a-9867-513f-a46e-c8daade2ba01",
+        "8710cbda-f743-5456-aefd-a4eb1d768373",
+        "b0fcd7fd-bf1c-5616-93dd-c039282e53b3",
+        "e3f87260-92c3-5a85-9871-23a54ef05139",
+        "e6007a6a-92ea-527b-9aa8-5e6c9f5d1da4"
+      ]
+    },
+    {
+      "id": "qa-021",
+      "category": "multi_doc",
+      "question": "正式员工和外包人员的工时要求有什么区别",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "考勤制度 vs 外包考勤与工时",
+      "expect_refusal": false,
+      "gold_chunk_ids": [
+        "1f13dd1d-6e58-5f2b-a0d1-65113acb4a5d",
+        "53a29290-7ecd-5339-a019-823df11e090b",
+        "9d0565d4-d537-52c2-819d-0c7f95fc5505",
+        "fe503da4-9a4f-53f8-9e9c-0c06bc3d83c2"
+      ]
+    },
+    {
+      "id": "qa-022",
+      "category": "no_answer",
+      "question": "公司健身房在哪里",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "语料外",
+      "expect_refusal": true,
+      "gold_chunk_ids": []
+    },
+    {
+      "id": "qa-023",
+      "category": "no_answer",
+      "question": "员工食堂提供什么菜",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "语料外",
+      "expect_refusal": true,
+      "gold_chunk_ids": []
+    },
+    {
+      "id": "qa-024",
+      "category": "no_answer",
+      "question": "如何申请办公用车",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "语料外",
+      "expect_refusal": true,
+      "gold_chunk_ids": []
+    },
+    {
+      "id": "qa-025",
+      "category": "no_answer",
+      "question": "公司年会什么时候举办",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "语料外",
+      "expect_refusal": true,
+      "gold_chunk_ids": []
+    },
+    {
+      "id": "qa-026",
+      "category": "no_answer",
+      "question": "公司附近有班车吗",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "语料外",
+      "expect_refusal": true,
+      "gold_chunk_ids": []
+    },
+    {
+      "id": "qa-027",
+      "category": "permission",
+      "question": "年假有几天",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "employee 文档对 contractor 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "5c1633a2-a478-5b34-a29e-cc1210a456e8",
+        "88492d1d-21f4-5c5f-b87e-19b81d956396",
+        "f9a8f1d2-a544-58c0-ae28-a211b7a162cd"
+      ]
+    },
+    {
+      "id": "qa-028",
+      "category": "permission",
+      "question": "薪酬保密制度的内容是什么",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "admin 文档对 employee 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "23a0ae5b-2825-5ca4-9df8-e0d1cd58c130"
+      ]
+    },
+    {
+      "id": "qa-029",
+      "category": "permission",
+      "question": "财务付款流程是什么",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "admin 文档对 employee 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "58ae8081-5d65-57dc-af6e-85a3496cf0fc",
+        "7fc5f652-4560-5884-bcbe-444c5b802efc",
+        "be01ccf3-38c6-529c-8631-2def954b1297"
+      ]
+    },
+    {
+      "id": "qa-030",
+      "category": "permission",
+      "question": "内部订单API如何创建订单",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "employee 文档对 contractor 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "13ac205d-9dbf-57ef-a3b3-41f80c8bb63b",
+        "3b45c5ce-1ea6-5755-967e-e05b1b33f4aa",
+        "3fe29cd0-fed0-5c2f-b7ea-b2933d2c96c8"
+      ]
+    },
+    {
+      "id": "qa-031",
+      "category": "permission",
+      "question": "考勤迟到扣款标准是什么",
+      "roles": [
+        "contractor"
+      ],
+      "answer_hint": "employee 文档对 contractor 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "1bab6b3b-efe5-596c-b7fc-c79ad1b367a0",
+        "53a29290-7ecd-5339-a019-823df11e090b",
+        "a9e6c3ad-3d63-54b1-aeb7-eb3f55edea34"
+      ]
+    },
+    {
+      "id": "qa-032",
+      "category": "permission",
+      "question": "研发部向谁汇报",
+      "roles": [
+        "employee"
+      ],
+      "answer_hint": "admin 文档对 employee 不可见",
+      "expect_refusal": true,
+      "gold_chunk_ids": [
+        "69d8fa64-b76a-504f-833e-774375deec2a",
+        "83ee825c-ffed-5235-9e96-e624340cb963",
+        "f3300513-9091-5c43-9220-16b3308116b5"
+      ]
+    }
+  ]
+}

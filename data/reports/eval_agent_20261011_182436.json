@@ -1,0 +1,268 @@
+{
+  "qa_set": "D:\\vscode\\agent code\\enterprise-kb-agent\\data\\qa_sets\\qa_set_v1.json",
+  "judge_enabled": true,
+  "ids_filter": [],
+  "cold": {
+    "answer_accuracy": 0.9523809523809523,
+    "answer_judged": 21,
+    "answer_total": 21,
+    "refusal": {
+      "accuracy": 0.9375,
+      "refuse_correct": 9,
+      "refuse_total": 11,
+      "answer_correct": 21,
+      "answer_total": 21,
+      "false_answer_rate": 0.18181818181818182,
+      "false_refusal_rate": 0.0
+    },
+    "citations": {
+      "covered": 21,
+      "total": 21
+    },
+    "latency_mean": 14.269283090624754,
+    "wall_secs": 497.1013662815094,
+    "leaks": [
+      "qa-029: 知识库中涉及多套付款/报销流程，且不同资料给出的规则不一致，需分别说明：\n\n**一、差旅报销付款流程（《差旅报销制度》）**\n- 流程为：出差申请 → 部门负责"
+    ],
+    "failures": [],
+    "per_item": [
+      {
+        "id": "qa-001",
+        "category": "single_hop",
+        "question": "年假有几天",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 13.709,
+        "answer_head": "年假天数按累计工龄确定，具体标准如下[2]：\n\n| 累计工龄 | 全年年假天数 |\n|---|---|\n| 满1年不满3年 | 5天 |\n| 满3年不满5年 | 7天 |\n| 满5年不满10年 | 10天 |\n| 满10年不满20年 | 1"
+      },
+      {
+        "id": "qa-002",
+        "category": "single_hop",
+        "question": "员工迟到会怎么处理",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 9.224,
+        "answer_head": "员工迟到按单次时长扣款，具体标准如下[1]：\n\n| 单次迟到时长 | 处理方式 | 扣款标准 |\n|---|---|---|\n| 1—10分钟 | 系统提醒 | 20元/次 |\n| 11—30分钟 | 主管约谈 | 50元/次 |\n| 31"
+      },
+      {
+        "id": "qa-003",
+        "category": "single_hop",
+        "question": "出差住宿标准是多少",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 11.22,
+        "answer_head": "知识库中存在两套不一致的住宿标准，且适用对象不同：\n\n**1. 《差旅报销制度》（适用于公司员工）** [3][8]\n\n| 城市等级 | A类（总监及以上） | B类（经理及高级专业人员） | C类（普通员工） |\n|---|---|---"
+      },
+      {
+        "id": "qa-004",
+        "category": "single_hop",
+        "question": "绩效考核的评级有哪些",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 9.755,
+        "answer_head": "绩效考核评级分为 S、A、B、C、D 五档[5]，各档定义、总分区间、绩效系数及目标分布如下[5]：\n\n| 评级 | 定义 | 总分区间 | 绩效系数 | 目标分布 |\n|---|---|---|---|---|\n| S | 卓越 | ≥1"
+      },
+      {
+        "id": "qa-005",
+        "category": "single_hop",
+        "question": "代码提交有什么规范",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 8.571,
+        "answer_head": "代码提交须遵循 Conventional Commits 格式：`<type>(<scope>): <subject>`[1]。标题不超过 50 个字符，正文每行不超过 72 个字符[1]。一个提交只完成一件事，单次有效变更建议不超过 30"
+      },
+      {
+        "id": "qa-006",
+        "category": "single_hop",
+        "question": "发布失败如何回滚",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 8.68,
+        "answer_head": "发布失败后的回滚流程如下（依据《发布流程规范》§1.4）：\n\n**触发与决策**\n- 值班人员发现告警、业务投诉或资金差错后，立即在 5 分钟内建立作战室，并通知发布负责人、SRE 和业务负责人[1]。\n- 发布负责人或值班经理须在 5 分"
+      },
+      {
+        "id": "qa-007",
+        "category": "single_hop",
+        "question": "公司数据分为几级",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 8.994,
+        "answer_head": "知识库中关于公司数据分级存在不一致的表述：\n\n- 《远程办公规范-外包版》§1.4 称公司数据分为公开、内部、秘密、绝密四级[1]\n- 《内部工具使用手册》§1.3 称公司数据分为公开、内部、秘密、机密四级[3]\n- 《数据权限说明》§1."
+      },
+      {
+        "id": "qa-008",
+        "category": "single_hop",
+        "question": "社保和公积金如何缴纳",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 19.139,
+        "answer_head": "社保和公积金缴纳要点如下：\n\n**缴纳时间**\n- 每月15日（含）前入职，当月办理增员缴纳；15日后入职，次月办理[1][4]。\n- 新员工入职当月15日前入职，当月缴纳；15日后入职，次月缴纳[1]。\n\n**缴纳项目与地点**\n- 公司"
+      },
+      {
+        "id": "qa-009",
+        "category": "single_hop",
+        "question": "数据备份的频率是多少",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 11.165,
+        "answer_head": "数据备份频率按数据类别区分如下[2]：\n\n| 数据类别 | 备份方式 | 备份频率 | 保留周期 | RPO | RTO |\n|---|---|---|---|---|---|\n| A类核心数据 | 全量+增量+实时日志，本地+异地+离线归"
+      },
+      {
+        "id": "qa-010",
+        "category": "single_hop",
+        "question": "安全事件分为几级",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 9.046,
+        "answer_head": "安全事件分为四级，即 L1-L4[1]。"
+      },
+      {
+        "id": "qa-011",
+        "category": "single_hop",
+        "question": "面试流程包括哪些环节",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 9.813,
+        "answer_head": "面试流程包括简历初筛、初试、复试、终试及录用决策[1]。"
+      },
+      {
+        "id": "qa-012",
+        "category": "single_hop",
+        "question": "云盘有哪些核心功能",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 12.567,
+        "answer_head": "云帆云盘的核心功能包括：文件存储与同步、在线预览与编辑、团队空间、外链分享、版本管理、全文检索、审计中心及开放集成能力[1][3]。\n\n相关能力要点：\n- 客户端支持 Windows、macOS、Linux、iOS、Android 及 We"
+      },
+      {
+        "id": "qa-013",
+        "category": "single_hop",
+        "question": "公开API如何认证",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 13.853,
+        "answer_head": "公开 API 的认证方式因版本而异：v2.0 采用 `Authorization: Bearer` 令牌鉴权[1]，v1.x 采用 API Key 鉴权[1][3]，而现行《公开API文档》（V1.2.0）采用 AppKey 与 AppSe"
+      },
+      {
+        "id": "qa-014",
+        "category": "single_hop",
+        "question": "入职需要准备什么材料",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 13.496,
+        "answer_head": "入职需准备以下材料[1]：\n\n| 材料名称 | 份数/形式 | 说明 |\n|---|---|---|\n| 身份证 | 原件+复印件2份 | 正反面复印于同一张A4纸 |\n| 学历、学位证书 | 原件+复印件1份 | 应届生可后补，最迟入职后"
+      },
+      {
+        "id": "qa-015",
+        "category": "single_hop",
+        "question": "外包人员如何结算",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 13.889,
+        "answer_head": "外包人员结算以自然月为周期，依据经确认工时、考核结果及合同单价执行[1][2]。\n\n**结算周期**\n\n| 结算节点 | 时限 | 责任方 | 交付物/说明 |\n|---|---|---|---|\n| 工时确认 | 次月第 1 至第 3 个"
+      },
+      {
+        "id": "qa-016",
+        "category": "single_hop",
+        "question": "第三方API的限流规则是什么",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": false,
+        "latency": 12.727,
+        "answer_head": "第三方 API 的限流规则如下：\n\n- 限流维度为 `app_id + 接口路径 + 来源 IP`，采用令牌桶算法[2]。\n- 超限返回 HTTP 429，响应体包含 `code=42901`、`message=too many reque"
+      },
+      {
+        "id": "qa-017",
+        "category": "multi_doc",
+        "question": "年假和病假的申请流程有什么不同",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 26.77,
+        "answer_head": "年假与病假在申请流程上的具体差异如下：\n\n- **提前申请要求**：年假原则上应提前3个工作日提交申请[1]；病假可事后1个工作日内补交证明[3][5]。\n- **申请材料**：年假申请需填写起止时间、时长、事由[1]；病假需提供二级以上医"
+      },
+      {
+        "id": "qa-018",
+        "category": "multi_doc",
+        "question": "内部订单API和公开API的鉴权方式有什么不同",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 23.306,
+        "answer_head": "内部订单API与公开API在鉴权方式上的具体差异如下：\n\n- **内部订单API**：所有接口必须通过内部授权中心鉴权，调用方需在请求头携带 `Authorization: Bearer <access_token>`，并传入 `X-App"
+      },
+      {
+        "id": "qa-019",
+        "category": "multi_doc",
+        "question": "员工行为准则和外包驻场人员行为规范有什么不同",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 26.083,
+        "answer_head": "**结论：两者在适用对象、办公时间、密码与安全要求、违规处理等方面存在具体差异；部分方面候选资料不足。**\n\n| 对比维度 | 员工行为准则（《员工手册-公开版》） | 外包/驻场人员行为规范 |\n|---|---|---|\n| 适用对象 "
+      },
+      {
+        "id": "qa-020",
+        "category": "multi_doc",
+        "question": "数据备份和应急预案分别要求多久演练一次",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 24.95,
+        "answer_head": "**结论：数据备份制度要求按系统等级分季度/半年/年度演练，应急预案要求每年至少 1 次全流程综合演练、2 次专项演练和 4 次桌面推演。**\n\n**《数据备份制度》恢复演练频率**[1]：\n- A 类核心系统：每季度至少演练 1 次[1]"
+      },
+      {
+        "id": "qa-021",
+        "category": "multi_doc",
+        "question": "正式员工和外包人员的工时要求有什么区别",
+        "expect_refusal": false,
+        "refused": false,
+        "judge_correct": true,
+        "latency": 26.393,
+        "answer_head": "正式员工与外包人员在工时要求上的具体差异如下：\n\n- **工时制度**：正式员工采用弹性工作制，工作日 8:30 至 10:00 之间上班、17:30 至 19:00 之间下班，核心工作时间为 10:00 至 17:00，午休 12:00 "
+      },
+      {
+        "id": "qa-029",
+        "category": "permission",
+        "question": "财务付款流程是什么",
+        "expect_refusal": true,
+        "refused": false,
+        "leak_answered": true,
+        "latency": 14.54
+      },
+      {
+        "id": "qa-030",
+        "category": "permission",
+        "question": "内部订单API如何创建订单",
+        "expect_refusal": true,
+        "refused": false,
+        "leak_answered": false,
+        "latency": 12.897
+      }
+    ]
+  },
+  "warm": {
+    "cache": {
+      "hits": 32,
+      "total": 32,
+      "rate": 1.0,
+      "latency_mean": 0.0011983062498757135
+    },
+    "wall_secs": 0.038771629333496094
+  }
+}

@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 数据与模型（大文件不入库）
+# 语料/QA 集/报告入库：QA 的 gold_chunk_ids 依赖语料内容，排除会导致 clone 后无法复现评估
+data/models/
+data/index_cache/
+
+# 运行日志
+*.log
+
+# 不提交：计划草稿与个人求职材料
+docs/plan.md
+docs/resume_draft.md
+
+# 不提交：被后续版本取代的中间评估快照
+data/reports/eval_hybrid_20261010_184850.json
+data/reports/eval_agent_20261011_154150.json
+data/reports/eval_agent_20261011_160008.json
+data/reports/eval_agent_20261011_160822.json
+data/reports/eval_agent_20261011_162046.json
+data/reports/eval_agent_20261011_162256.json
+data/reports/eval_agent_20261011_164105.json
+
+# 环境与密钥
+.env
+
+# 编辑器
+.idea/
+.vscode/
