@@ -58,3 +58,10 @@ class ExactCache:
             json.dumps(result, ensure_ascii=False),
             ex=self.ttl,
         )
+
+    def flush(self) -> int:
+        """清空全部 L1 缓存键（改 prompt/检索逻辑后、评估冷轮前）。返回删除数。"""
+        keys = list(self.redis.scan_iter(match=f"{KEY_PREFIX}:*"))
+        if not keys:
+            return 0
+        return self.redis.delete(*keys)

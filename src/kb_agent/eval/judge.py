@@ -22,7 +22,8 @@ JUDGE_PROMPT = """你是检索质量评估员。给定一个用户问题和一�
 ANSWER_JUDGE_PROMPT = """你是问答质量评估员。给定用户问题、参考要点和系统答案，判断答案是否正确回答了问题（覆盖参考要点的关键信息即可，不要求措辞一致；拒绝回答、答非所问、与要点矛盾的答案均判错）。
 
 问题：{question}
-参考要点：{hint}
+参考要点（答案应覆盖其中关键项）：
+{points}
 系统答案：{answer}
 
 只输出 JSON：{{"correct": true, "reason": "一句话理由"}}"""
@@ -76,17 +77,21 @@ def judge_answer(
     client: OpenAI,
     question: str,
     answer: str,
-    hint: str,
+    hint: str | list[str],
     model: str = settings.deepseek_flash_model,
 ) -> tuple[bool, str]:
-    """D24 端到端 judge：判 Agent 答案是否覆盖参考要点，返回 (correct, reason)。"""
+    """D24 端到端 judge：判 Agent 答案是否覆盖参考要点，返回 (correct, reason)。
+
+    hint 兼容 v1 字符串与 v2 要点列表（v2 按编号列出，判分口径更细）。
+    """
+    points = "\n".join(f"- {p}" for p in hint) if isinstance(hint, list) else hint
     resp = client.chat.completions.create(
         model=model,
         messages=[
             {
                 "role": "user",
                 "content": ANSWER_JUDGE_PROMPT.format(
-                    question=question, hint=hint, answer=answer[:1500]
+                    question=question, points=points, answer=answer[:1500]
                 ),
             }
         ],

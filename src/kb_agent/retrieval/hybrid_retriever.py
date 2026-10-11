@@ -58,31 +58,50 @@ class HybridRetriever:
         roles: list[str],
         top_k: int = 5,
         with_rerank: bool = True,
+        mode: str = "hybrid",
         timings: dict[str, float] | None = None,
+        pre_rerank_ids: list[str] | None = None,
     ) -> list[RetrievedChunk]:
         """召回 top_n → 重排 → 返回 top_k 候选（按 rerank 分降序）。
 
-        timings 传入时按 embed / recall / rerank 三段埋点（评估的"分阶段延迟"指标用）。
+        mode: hybrid（dense+sparse RRF）/ hybrid_no_rerank / dense / sparse（消融开关，D29 下沉本层）。
+        timings 传入时按 embed / bm25 / qdrant / rerank 四段埋点（延迟拆解用）。
+        pre_rerank_ids 传入时按序填充 rerank 前的候选 chunk_id（失败归因用：
+        区分「gold 未召回」与「召回但被 rerank 压下去」）。
+        rrf 融合在 Qdrant 服务端 FusionQuery 内完成，与 qdrant 段不可分（单次网络往返）。
         """
         t0 = time.perf_counter()
         qvec = self.embedder.encode_query(query)
         t1 = time.perf_counter()
-        hits = self.store.query_hybrid(
-            qvec.tolist(),
-            self.bm25.encode(query, for_query=True),
-            roles=roles,
-            limit=self.top_n,
-        )
-        t2 = time.perf_counter()
+        if mode == "dense":
+            sparse_vec = None
+            hits = self.store.query_dense_only(qvec.tolist(), roles=roles, limit=self.top_n)
+        else:
+            sparse_vec = self.bm25.encode(query, for_query=True)
+            t2 = time.perf_counter()
+            if mode == "sparse":
+                hits = self.store.query_sparse_only(sparse_vec, roles=roles, limit=self.top_n)
+            else:
+                hits = self.store.query_hybrid(
+                    qvec.tolist(), sparse_vec, roles=roles, limit=self.top_n
+                )
+        t3 = time.perf_counter()
         chunks = [self._to_chunk(h) for h in hits]
-        if with_rerank and chunks:
+        if pre_rerank_ids is not None:
+            pre_rerank_ids.extend(c.chunk_id for c in chunks)
+        if with_rerank and mode == "hybrid" and chunks:
             scores = self.reranker.rerank(query, [c.text for c in chunks])
             for c, s in zip(chunks, scores, strict=True):
                 c.rerank_score = s
             chunks.sort(key=lambda c: (c.rerank_score or 0.0), reverse=True)
-        t3 = time.perf_counter()
+        t4 = time.perf_counter()
         if timings is not None:
-            timings.update(embed=t1 - t0, recall=t2 - t1, rerank=t3 - t2)
+            timings.update(
+                embed=t1 - t0,
+                bm25=(t2 - t1 if sparse_vec is not None else 0.0),
+                qdrant=t3 - (t2 if sparse_vec is not None else t1),
+                rerank=t4 - t3,
+            )
         return chunks[:top_k]
 
     @staticmethod
@@ -98,5 +117,5 @@ class HybridRetriever:
             section=p.get("section"),
             role=p.get("role", ""),
             is_code=bool(p.get("is_code")),
-            rrf_score=hit.score,
+            rrf_score=getattr(hit, "score", 0.0),  # scroll 的 Record 无 score
         )

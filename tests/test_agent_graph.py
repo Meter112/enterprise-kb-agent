@@ -219,6 +219,20 @@ def test_split_compare_query_variants() -> None:
     assert _split_compare_query("新员工入职流程") == []
     # 并列但非比较语义（尾部锚定不匹配）不拆
     assert _split_compare_query("年假和病假都算考勤吗") == []
+    # 结尾标点（v2 QA 集统一带「？」）不影响拆分
+    assert _split_compare_query("《服务条款》和《隐私政策》在用户数据处理与责任约定上有什么不同？") == [
+        "《服务条款》在用户数据处理与责任约定上",
+        "《隐私政策》在用户数据处理与责任约定上",
+    ]
+    assert _split_compare_query("正式员工与外包人员的工时要求有什么区别。") == [
+        "正式员工的工时要求",
+        "外包人员的工时要求",
+    ]
+    # 《》标题 + 对X 属性（qa-120 句式）也按书名号边界补属性
+    assert _split_compare_query("《外包人员管理规范》和《驻场人员行为规范》对外包/驻场人员的约束重点有什么不同？") == [
+        "《外包人员管理规范》对外包/驻场人员的约束重点",
+        "《驻场人员行为规范》对外包/驻场人员的约束重点",
+    ]
 
 
 def test_multiple_query_kb_merges_and_partial_hit_not_refused() -> None:
@@ -245,6 +259,49 @@ def test_multiple_query_kb_merges_and_partial_hit_not_refused() -> None:
     assert [c["chunk_id"] for c in out["chunks"]] == ["c1", "c2"]
     assert len(out["citations"]) == 2
     assert [c["query"] for c in retriever.calls] == ["内部订单API的鉴权方式", "公开API的鉴权方式"]
+
+
+def test_single_query_kb_splits_comparison_with_trailing_mark() -> None:
+    """router 把带问号的完整对比问题原样塞进 query_kb：exec 层兜底拆两侧。"""
+    llm = FakeLLM(
+        [
+            LLMReply(
+                content="",
+                tool_calls=[_tool_call(arguments='{"query": "内部订单API和公开API的鉴权方式有什么不同？"}')],
+            )
+        ],
+        streams=[["内部用 OAuth[1]，公开用 Key[2]。"]],
+    )
+    retriever = QueryKeyedRetriever({
+        "内部订单API的鉴权方式": [_chunk(cid="c1")],
+        "公开API的鉴权方式": [_chunk(cid="c2")],
+    })
+    graph = build_graph({"llm": llm, "retriever": retriever, "store": FakeStore()}).compile()
+    out = _invoke(graph)
+    assert [c["query"] for c in retriever.calls] == ["内部订单API的鉴权方式", "公开API的鉴权方式"]
+    assert [c["chunk_id"] for c in out["chunks"]] == ["c1", "c2"]
+
+
+def test_single_query_kb_appends_original_when_reformulated() -> None:
+    """router 改写丢词面匹配时（qa-103），原题兜底再检索一遍，结果合并。"""
+    llm = FakeLLM(
+        [
+            LLMReply(
+                content="",
+                tool_calls=[_tool_call(arguments='{"query": "外包人员有哪些福利"}')],
+            )
+        ],
+        streams=[["外包人员不适用公司福利制度，节日礼品也不适用[1]。"]],
+    )
+    retriever = QueryKeyedRetriever({
+        "外包人员可以享受公司节日礼品吗": [_chunk(cid="c1")],
+    })
+    graph = build_graph({"llm": llm, "retriever": retriever, "store": FakeStore()}).compile()
+    out = _invoke(graph, query="外包人员可以享受公司节日礼品吗")
+    # 原题兜底在前：词面命中的 gold 先进入候选序列
+    assert [c["query"] for c in retriever.calls] == ["外包人员可以享受公司节日礼品吗", "外包人员有哪些福利"]
+    assert not out["refused"]
+    assert [c["chunk_id"] for c in out["chunks"]] == ["c1"]
 
 
 def test_multiple_query_kb_dedupes_same_chunk() -> None:

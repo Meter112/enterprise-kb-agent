@@ -93,3 +93,34 @@ class BM25Encoder:
         enc.avgdl = data["avgdl"]
         enc.doc_count = data["doc_count"]
         return enc
+
+
+class RankBM25Baseline:
+    """rank_bm25 库版对照（可选依赖，仅 ablation 用）。
+
+    全量 chunk 文本内存索引 + 库版打分，用于验证手写 BM25 与库版的一致性。
+    已知公式差异：库版 idf 为 log((N-df+0.5)/(df+0.5))（无 +1 smoothing），
+    手写版为 log((N-df+0.5)/(df+0.5)+1)——对照的意义正是量化该差异对指标的影响。
+    库版打分尺度与 rerank 分不同，拒答阈值不适用于对照组（只报 Hit/MRR）。
+    """
+
+    def __init__(self, texts: list[str]) -> None:
+        try:
+            from rank_bm25 import BM25Okapi
+        except ImportError as e:
+            raise ImportError(
+                "rank_bm25 对照需要可选依赖：uv sync --extra bm25-baseline（或 pip install rank-bm25）"
+            ) from e
+        self.texts = texts
+        self._bm25 = BM25Okapi(
+            [list(jieba.cut_for_search(t)) for t in texts]
+        )
+
+    def search(self, query: str, top_k: int = 5) -> list[tuple[int, float]]:
+        """返回 (texts 下标, score)，按分降序。空查询返回空列表。"""
+        toks = list(jieba.cut_for_search(query))
+        if not toks:
+            return []
+        scores = self._bm25.get_scores(toks)
+        ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+        return [(i, float(scores[i])) for i in ranked[:top_k]]

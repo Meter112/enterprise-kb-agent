@@ -1,12 +1,15 @@
 """D24-25 端到端评估 CLI：Agent 全链路跑 QA 集两遍（cold 写缓存 / warm 测 L1 命中）。
 
+D30 升级：默认读 v2 QA 集（data/qa_sets/v2/，6 场景 jsonl），按场景分组输出
+正确率/Hit@5（Wilson 区间）+ 失败归因分类（error_analysis）。
+
 用法:
-  uv run python scripts/eval_agent.py              # 全量 32 条 + judge
+  uv run python scripts/eval_agent.py              # 全量 QA 集 + judge
   uv run python scripts/eval_agent.py --no-judge   # 只统计拒答/延迟/缓存（省钱）
   uv run python scripts/eval_agent.py --ids qa-029 # 只跑指定条目
 
 依赖：Qdrant + Redis 容器在跑（与 host 开发环境一致）。
-输出：data/reports/eval_agent_*.json（含 cold/warm 两轮 + RAG 基线对比字段）。
+输出：data/reports/eval_agent_*.json（含 cold/warm 两轮 + 分组 + 归因）。
 """
 from __future__ import annotations
 
@@ -14,6 +17,7 @@ import argparse
 import json
 import time
 
+from langgraph.checkpoint.memory import InMemorySaver
 from openai import OpenAI
 
 from kb_agent.agent.cache import ExactCache
@@ -21,6 +25,9 @@ from kb_agent.agent.graph import KBAgent
 from kb_agent.agent.llm import LLMClient
 from kb_agent.config import settings
 from kb_agent.eval.agent_runner import AgentEvalRunner
+from kb_agent.eval.error_analysis import classify, summary_table
+from kb_agent.eval.gold_resolver import load_payload_index
+from kb_agent.eval.metrics import wilson_interval
 from kb_agent.eval.qa_set import load_qa_set
 from kb_agent.ingest.sparse_bm25 import BM25Encoder
 from kb_agent.models.embedder import Embedder
@@ -28,16 +35,34 @@ from kb_agent.models.reranker import Reranker
 from kb_agent.store.qdrant_store import QdrantStore
 
 
+def print_scenario_groups(report) -> None:
+    """按场景分组：正确率 + Hit@5，小样本附 Wilson 95% 区间。"""
+    print("\n==== 场景分组 ====")
+    print(f"{'场景':<14} {'条数':>4} {'正确率':>16} {'Hit@5':>14}")
+    for scenario, g in sorted(report.by_scenario.items()):
+        if g["judged"]:
+            lo, hi = wilson_interval(g["correct"], g["judged"])
+            acc = f"{g['correct']}/{g['judged']} = {g['correct'] / g['judged']:.2f} [{lo:.2f},{hi:.2f}]"
+        else:
+            acc = "—"
+        if g["n_gold"]:
+            lo, hi = wilson_interval(g["hit"], g["n_gold"])
+            hit = f"{g['hit']}/{g['n_gold']} = {g['hit'] / g['n_gold']:.2f} [{lo:.2f},{hi:.2f}]"
+        else:
+            hit = "—"
+        print(f"{scenario:<14} {g['n']:>4} {acc:>16} {hit:>14}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--qa", default=str(settings.data_dir / "qa_sets" / "qa_set_v1.json"))
+    ap.add_argument("--qa", default=str(settings.data_dir / "qa_sets" / "v2"))
     ap.add_argument("--no-judge", action="store_true", help="跳过 flash judge（只测拒答/延迟/缓存）")
     ap.add_argument("--ids", nargs="*", default=[], help="只跑指定 item id（调试/复测用）")
     args = ap.parse_args()
 
     items = load_qa_set(args.qa)
     if args.ids:
-        items = [i for i in items if i.id in args.ids]
+        items = [i for i in items if i.qa_id in args.ids]
     print(f"QA 集 {len(items)} 条")
 
     judge_client = None
@@ -45,25 +70,32 @@ def main() -> None:
         assert settings.deepseek_api_key, "judge 需要 DEEPSEEK_API_KEY"
         judge_client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
 
-    # 与 API 服务同构的 agent（单轮评估：checkpointer=None；cache 供 warm 轮测命中）
+    # 与 API 服务同构的 agent；含 multi_turn 时用 InMemorySaver 跑多轮会话
+    # （API 侧多轮走 RedisSaver，进程内评估不依赖 Redis 也能测改写链路）
     llm = LLMClient(
         settings.deepseek_api_key, settings.deepseek_base_url, settings.deepseek_chat_model
     )
+    has_multi_turn = any(i.turns for i in items)
     agent = KBAgent(
         QdrantStore(),
         Embedder(),
         BM25Encoder.load(settings.data_dir / "index_cache" / "bm25_meta.json"),
         Reranker(),
         llm,
-        checkpointer=None,
+        checkpointer=InMemorySaver() if has_multi_turn else None,
         cache=ExactCache(settings.redis_url),
     )
     runner = AgentEvalRunner(agent, judge_client=judge_client)
 
+    # 冷轮前清空 L1 缓存：历史评估的缓存答案会让 cold 轮名不副实
+    # （latency≈0.001s、retrieved 为空、旧答案按新要点判分，实测 36/123 条被污染）
+    flushed = agent.cache.flush()
+    print(f"已清空 L1 缓存 {flushed} 键")
+
     t0 = time.time()
     cold = runner.run(items)
     cold_secs = time.time() - t0
-    print(f"cold 轮完成：{cold_secs / 60:.1f} min，平均 {cold.latency_mean:.1f}s/条")
+    print(f"cold 轮完成：{cold_secs / 60:.1f} min，平均 {cold.latency_mean:.1f}s/条（TTFT {cold.ttft_mean:.1f}s）")
 
     t1 = time.time()
     warm = runner.run(items, warm_cache=True)
@@ -73,11 +105,15 @@ def main() -> None:
     r = cold.refusal
     print("\n==== Agent 端到端评估 ====")
     print(f"答案正确率(judge): {cold.answer_accuracy:.3f}（{cold.answer_judged} 条判分）")
+    if cold.answer_judged:
+        lo, hi = wilson_interval(int(cold.answer_accuracy * cold.answer_judged), cold.answer_judged)
+        print(f"  95% 区间: [{lo:.3f}, {hi:.3f}]")
     print(f"拒答准确率: {r.accuracy:.3f}（应拒 {r.refuse_correct}/{r.refuse_total}，"
           f"应答 {r.answer_correct}/{r.answer_total}，漏拒率 {r.false_answer_rate:.3f}）")
     c = cold.citations
     print(f"引用覆盖: {c['covered']}/{c['total']}（应答题答案含 [n] 引用）")
-    print(f"端到端延迟: cold 平均 {cold.latency_mean:.1f}s/条")
+    print(f"端到端延迟: cold 平均 {cold.latency_mean:.1f}s/条（TTFT {cold.ttft_mean:.1f}s，"
+          f"生成后流式 {max(cold.latency_mean - cold.ttft_mean, 0):.1f}s）")
     print(f"L1 缓存(warm 轮): 命中 {warm.cache.get('hits', 0)}/{warm.cache.get('total', 0)}"
           f"（{warm.cache.get('rate', 0):.0%}），平均 {warm.cache.get('latency_mean', 0):.3f}s/条")
     if cold.leaks:
@@ -85,12 +121,23 @@ def main() -> None:
     if cold.failures:
         print(f"失败 {len(cold.failures)} 条: {cold.failures[:5]}")
 
+    print_scenario_groups(cold)
+
+    # 失败归因：gold 文本用于 chunk 切断启发式
+    gold_texts = {
+        pid: pl.get("text", "")
+        for pid, pl in load_payload_index(QdrantStore()).items()
+    }
+    classified = classify(cold.per_item, gold_texts)
+    print("\n==== 失败归因 ====")
+    print(summary_table(classified))
+
     out = settings.data_dir / "reports" / f"eval_agent_{time.strftime('%Y%m%d_%H%M%S')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps(
             {
-                "qa_set": args.qa.split("/")[-1],
+                "qa_set": str(args.qa),
                 "judge_enabled": judge_client is not None,
                 "ids_filter": args.ids,
                 "cold": {
@@ -108,9 +155,14 @@ def main() -> None:
                     },
                     "citations": cold.citations,
                     "latency_mean": cold.latency_mean,
+                    "ttft_mean": cold.ttft_mean,
                     "wall_secs": cold_secs,
                     "leaks": cold.leaks,
                     "failures": cold.failures,
+                    "by_scenario": cold.by_scenario,
+                    "error_analysis": {
+                        cat: [x["id"] for x in recs] for cat, recs in classified.items()
+                    },
                     "per_item": cold.per_item,
                 },
                 "warm": {"cache": warm.cache, "wall_secs": warm_secs},

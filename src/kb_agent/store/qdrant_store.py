@@ -204,6 +204,23 @@ class QdrantStore:
         )
         return hits
 
+    def scroll_all(self, roles: list[str]) -> list[ScoredPoint]:
+        """全量 chunks（rank_bm25 对照的语料源），同样受层级过滤。"""
+        hits, _ = self.client.scroll(
+            collection_name=self.collection,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="role", match=MatchAny(any=sorted(expand_roles(roles)))
+                    )
+                ]
+            ),
+            with_payload=True,
+            with_vectors=False,
+            limit=500,
+        )
+        return hits
+
     def count(self) -> int:
         return self.client.count(collection_name=self.collection, exact=True).count
 

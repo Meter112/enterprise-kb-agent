@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -61,9 +62,10 @@ def query_kb(
     「内部订单API的鉴权方式」的正确答案 rerank 后排第 6 被截掉），
     放宽到 8 个候选兜底；拒答阈值只依赖最高分，不受影响。
     """
-    chunks = retriever.retrieve(query, roles=roles, top_k=top_k)
+    timings: dict[str, float] = {}
+    chunks = retriever.retrieve(query, roles=roles, top_k=top_k, timings=timings)
     refused, reason = refuse_decision(chunks)
-    return {"chunks": chunks, "refused": refused, "refuse_reason": reason}
+    return {"chunks": chunks, "refused": refused, "refuse_reason": reason, "timings": timings}
 
 
 def _norm(s: str) -> str:
@@ -125,10 +127,12 @@ def summarize_doc(
     if not texts:
         return {"title": title, "refused": True, "refuse_reason": "doc_not_found", "summary": ""}
 
+    llm_secs = 0.0
     focus = question or "整体内容"
     map_notes: list[str] = []
     for i in range(0, len(texts), map_batch):
         batch = "\n\n---\n\n".join(texts[i : i + map_batch])
+        t0 = time.perf_counter()
         reply = llm.chat(
             [
                 {
@@ -139,6 +143,7 @@ def summarize_doc(
             ],
             max_tokens=4096,
         )
+        llm_secs += time.perf_counter() - t0
         if reply.content.strip():
             map_notes.append(reply.content.strip())
 
@@ -148,6 +153,7 @@ def summarize_doc(
     if len(map_notes) == 1:
         summary = map_notes[0]
     else:
+        t0 = time.perf_counter()
         reply = llm.chat(
             [
                 {"role": "system", "content": REDUCE_SUMMARY_SYSTEM},
@@ -155,6 +161,7 @@ def summarize_doc(
             ],
             max_tokens=4096,
         )
+        llm_secs += time.perf_counter() - t0
         summary = reply.content.strip()
     return {
         "title": title,
@@ -163,6 +170,7 @@ def summarize_doc(
         "refuse_reason": "",
         "summary": summary,
         "chunk_count": len(texts),
+        "llm_timings": {"llm_summarize": llm_secs},
     }
 
 

@@ -1,0 +1,93 @@
+{
+  "qa_set": "D:\\vscode\\agent code\\enterprise-kb-agent\\data\\qa_sets\\v2",
+  "judge_enabled": true,
+  "ids_filter": [
+    "qa-153"
+  ],
+  "cold": {
+    "answer_accuracy": 1.0,
+    "answer_judged": 1,
+    "answer_total": 1,
+    "refusal": {
+      "accuracy": 1.0,
+      "refuse_correct": 0,
+      "refuse_total": 0,
+      "answer_correct": 1,
+      "answer_total": 1,
+      "false_answer_rate": 0.0,
+      "false_refusal_rate": 0.0
+    },
+    "citations": {
+      "covered": 1,
+      "total": 1
+    },
+    "latency_mean": 8.899089799997455,
+    "ttft_mean": 0.7603692999982741,
+    "wall_secs": 28.883620262145996,
+    "leaks": [],
+    "failures": [],
+    "by_scenario": {
+      "multi_turn": {
+        "n": 1,
+        "correct": 1,
+        "judged": 1,
+        "hit": 1,
+        "n_gold": 1
+      }
+    },
+    "error_analysis": {
+      "gold_missed": [],
+      "rerank_demoted": [],
+      "gen_error": [],
+      "false_refusal": [],
+      "leak": [],
+      "chunk_truncated": [],
+      "ambiguous": []
+    },
+    "per_item": [
+      {
+        "id": "qa-153",
+        "category": "multi_turn",
+        "difficulty": "easy",
+        "question": "那这个密码建议多久更换一次？",
+        "role": "public",
+        "answer_points": [
+          "建议每90个自然日更换一次密码",
+          "并启用双因素认证"
+        ],
+        "expect_refusal": false,
+        "refused": false,
+        "gold_chunk_ids": [
+          "0b250e0a-f102-5580-b8b6-1bd8fc5b1901",
+          "bb24de25-f437-5e11-b922-0ae812a1e495"
+        ],
+        "retrieved_ids": [
+          "bb24de25-f437-5e11-b922-0ae812a1e495",
+          "0b250e0a-f102-5580-b8b6-1bd8fc5b1901",
+          "12aa120f-c833-570f-8c34-cf7b8727b680",
+          "7b29e9b4-5189-5061-9eee-7588255dac60",
+          "586f6147-3ca7-5240-b6ef-c9337f4e5189",
+          "a3ecf7ba-7105-5371-9c18-697a98728af3",
+          "bbf44a9c-0837-543f-ae50-e4089a764284",
+          "5ffd8b3f-8246-5d06-8c9d-cbd5816e946d"
+        ],
+        "hit": true,
+        "latency": 8.899,
+        "ttft": 0.76,
+        "turns_refused": [],
+        "judge_correct": true,
+        "judge_votes": 0,
+        "answer": "管理员账号密码建议每 90 个自然日更换一次，并启用双因素认证[1][2]。"
+      }
+    ]
+  },
+  "warm": {
+    "cache": {
+      "hits": 0,
+      "total": 1,
+      "rate": 0.0,
+      "latency_mean": 8.832799800002249
+    },
+    "wall_secs": 26.727688312530518
+  }
+}

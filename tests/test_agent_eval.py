@@ -4,18 +4,18 @@ from __future__ import annotations
 import pytest
 
 from kb_agent.eval.agent_runner import AgentEvalRunner
-from kb_agent.eval.qa_set import QAItem
+from kb_agent.eval.qa_set import QAItem, QATurn
 
 
 class FakeAgent:
-    """按 item.id 返回预设结果。"""
+    """按 question 返回预设结果，记录 ask 序列（含 session）。"""
 
     def __init__(self, outcomes: dict[str, dict]) -> None:
         self.outcomes = outcomes
-        self.asked: list[str] = []
+        self.asked: list[tuple[str, str | None]] = []
 
-    def ask(self, question: str, role: str) -> dict:
-        self.asked.append(question)
+    def ask(self, question: str, role: str, session_id: str | None = None) -> dict:
+        self.asked.append((question, session_id))
         return self.outcomes[question]
 
 
@@ -46,14 +46,15 @@ def fake_judge(monkeypatch):
     return {"answer": verdicts, "leak": leak_verdicts}
 
 
-def item(qid: str, expect_refusal: bool = False, hint: str = "要点") -> QAItem:
+def item(qid: str, expect_refusal: bool = False, points: list[str] | None = None) -> QAItem:
     return QAItem(
-        id=qid,
-        category="single_hop",
+        qa_id=qid,
         question=f"问题{qid}",
-        roles=["employee"],
-        answer_hint=hint,
+        role="employee",
+        gold_chunk_ids=[],
+        answer_points=points or ["要点"],
         expect_refusal=expect_refusal,
+        scenario_type="permission" if expect_refusal else "single_hop",
     )
 
 
@@ -122,9 +123,53 @@ def test_warm_cache_round(fake_judge):
     assert report.answer_total == 0 and report.answer_judged == 0
 
 
+def test_multi_turn_runs_in_one_session(fake_judge):
+    """turns 同 session 顺序执行（末轮判分），历史轮误拒记录在案。"""
+    item_mt = QAItem(
+        qa_id="mt",
+        question="那病假呢",
+        role="employee",
+        gold_chunk_ids=[],
+        answer_points=["病假天数"],
+        expect_refusal=False,
+        scenario_type="multi_turn",
+        turns=[QATurn(question="年假有几天", answer_points=[])],
+    )
+    agent = FakeAgent({
+        "年假有几天": {"refused": False, "answer": "5天", "citations": []},
+        "那病假呢": {"refused": False, "answer": "10天[1]", "citations": ["A"]},
+    })
+    report = AgentEvalRunner(agent, judge_client=object()).run([item_mt])
+    assert [q for q, _ in agent.asked] == ["年假有几天", "那病假呢"]
+    assert agent.asked[0][1] == agent.asked[1][1] == "eval-mt-cold"  # 同一 session
+    assert report.answer_accuracy == 1.0
+    assert report.per_item[0]["turns_refused"] == []
+
+
+def test_multi_turn_early_refusal_fails_item(fake_judge):
+    item_mt = QAItem(
+        qa_id="mt2",
+        question="那病假呢",
+        role="employee",
+        gold_chunk_ids=[],
+        answer_points=["病假天数"],
+        expect_refusal=False,
+        scenario_type="multi_turn",
+        turns=[QATurn(question="年假有几天", answer_points=[])],
+    )
+    agent = FakeAgent({
+        "年假有几天": {"refused": True, "answer": "", "refuse_reason": "low_confidence"},
+        "那病假呢": {"refused": False, "answer": "10天", "citations": []},
+    })
+    report = AgentEvalRunner(agent, judge_client=object()).run([item_mt])
+    # 历史轮误拒：整条判 refused，末轮不再调用
+    assert [q for q, _ in agent.asked] == ["年假有几天"]
+    assert report.refusal.false_refusal_rate == 1.0
+
+
 def test_agent_exception_recorded_as_failure(fake_judge):
     class BoomAgent(FakeAgent):
-        def ask(self, question: str, role: str) -> dict:
+        def ask(self, question: str, role: str, session_id: str | None = None) -> dict:
             raise RuntimeError("boom")
 
     report = AgentEvalRunner(BoomAgent({}), judge_client=object()).run([item("a")])

@@ -36,6 +36,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+import time
 import uuid
 from typing import Any
 
@@ -82,6 +83,14 @@ def _emit(deps: dict[str, Any], event: dict[str, Any]) -> None:
         events.put(event)
 
 
+def _lat(state: AgentState, **updates: float) -> dict[str, float]:
+    """延迟拆解更新（D29）。节点返回值与 state 是浅合并，嵌套 dict 会被整体
+    替换——必须读-改-写返回完整副本，不能只返回本次新增的键。"""
+    merged = dict(state.get("latency") or {})
+    merged.update(updates)
+    return merged
+
+
 def _chunk_to_dict(c: RetrievedChunk) -> dict[str, Any]:
     """RetrievedChunk → dict：checkpoint JSON 序列化安全 + 预生成引用标签。"""
     return {
@@ -111,6 +120,8 @@ def _split_compare_query(query: str) -> list[str]:
     'B的X' 里 '的X' 是两侧共享属性时补到左侧；拆不出（非对比句式）返回空列表。
     """
     q = (query or "").strip()
+    # 去掉结尾标点再匹配：生成管线的问题统一带「？」，$ 锚点会被标点挡住
+    q = q.rstrip("？?。.！!")
     if not _COMPARE_TAIL_RE.search(q):
         return []
     body = _COMPARE_TAIL_RE.sub("", q)  # 剥掉尾部比较词
@@ -121,7 +132,14 @@ def _split_compare_query(query: str) -> list[str]:
     if not left or not right:
         return []
     # 共享属性：'A和B的X' → right='B的X' 且 left 无属性 → attr 补到左侧，右侧保持
-    if "的" in right and "的" not in left:
+    # 《》标题族按书名号边界取属性（'《A》和《B》在X上/对X'），其余退「的X」模式
+    if left.startswith("《") and right.startswith("《"):
+        end = right.find("》")
+        if end > 0 and "》" in left:
+            attr = right[end + 1:]
+            if attr:
+                left = left + attr
+    elif "的" in right and "的" not in left:
         left = left + right[right.index("的"):]
     if not right or left == right:
         return []
@@ -148,6 +166,7 @@ def _rewrite(state: AgentState, llm: LLMClient) -> dict[str, Any]:
     history = (state.get("messages") or [])[:-1][-REWRITE_HISTORY_LIMIT:]
     if not history:
         return {"rewritten_query": query}
+    t0 = time.perf_counter()
     reply = llm.chat(
         [
             {"role": "system", "content": REWRITE_SYSTEM},
@@ -161,11 +180,16 @@ def _rewrite(state: AgentState, llm: LLMClient) -> dict[str, Any]:
         max_tokens=1024,
     )
     rewritten = reply.content.strip() or query
-    return {"rewritten_query": rewritten, "trace": [{"node": "rewrite", "rewritten": rewritten}]}
+    return {
+        "rewritten_query": rewritten,
+        "trace": [{"node": "rewrite", "rewritten": rewritten}],
+        "latency": _lat(state, llm_rewrite=time.perf_counter() - t0),
+    }
 
 
 def _tool_router(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dict[str, Any]:
     """LLM function-calling 决定工具。无工具调用（寒暄/常识问题）→ 直答。"""
+    t0 = time.perf_counter()
     reply = llm.chat(
         [
             {"role": "system", "content": TOOL_ROUTER_SYSTEM},
@@ -174,6 +198,7 @@ def _tool_router(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dic
         tools=TOOL_SCHEMAS,
         max_tokens=4096,
     )
+    llm_router_secs = time.perf_counter() - t0
     calls = reply.tool_calls or []
     _emit(
         deps,
@@ -184,10 +209,15 @@ def _tool_router(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dic
         },
     )
     if not calls:
-        return {"tool_calls": [], "trace": [{"node": "tool_router", "tools": []}]}
+        return {
+            "tool_calls": [],
+            "trace": [{"node": "tool_router", "tools": []}],
+            "latency": _lat(state, llm_router=llm_router_secs),
+        }
     return {
         "tool_calls": calls,
         "trace": [{"node": "tool_router", "tools": [c["name"] for c in calls]}],
+        "latency": _lat(state, llm_router=llm_router_secs),
     }
 
 
@@ -206,16 +236,40 @@ def _exec_tools(state: AgentState, deps: dict[str, Any]) -> dict[str, Any]:
     refused, reason = False, ""
     kb_called = kb_ok = 0
     kb_reason = ""
+
+    # 预解析工具参数：原题兜底检索需要先知道全部 query_kb 调用
+    parsed_calls: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for call in state["tool_calls"]:
         try:
             args = json.loads(call["arguments"])
         except json.JSONDecodeError:
             args = {}
+        parsed_calls.append((call, args))
+    kb_queries = [
+        args.get("query", state["rewritten_query"]) or state["rewritten_query"]
+        for call, args in parsed_calls
+        if call["name"] == "query_kb"
+    ]
+    original = (state.get("rewritten_query") or "").strip()
+    # router 改写兜底：只有一个 query_kb 且其 query 与原题不同、原题非对比句式时，
+    # 原题也检索一遍（qa-103 实测：改写丢词面匹配，原题 top1=0.92 的 gold 被挤掉）
+    append_original = (
+        len(kb_queries) == 1
+        and kb_queries[0].strip() != original
+        and not _split_compare_query(original)
+    )
+
+    for call, args in parsed_calls:
         if call["name"] == "query_kb":
             kb_called += 1
             q = args.get("query", state["rewritten_query"]) or state["rewritten_query"]
             # 对比题兜底拆分：拆出两侧就各自检索，拆不出按原 query 检索
-            for sub_q in _split_compare_query(q) or [q]:
+            sub_queries = _split_compare_query(q)
+            if not sub_queries:
+                # 原题兜底时原题在前：其词面命中（gold）优先进入候选序列，
+                # 避免改写查询的相邻主题结果排在前面挤掉 gold（qa-103 实测）
+                sub_queries = [original, q] if append_original else [q]
+            for sub_q in sub_queries:
                 r = query_kb(sub_q, roles, retriever)
                 results.append({"tool": "query_kb", "query": sub_q, "result": r})
                 # 单次调用的候选（事件用）；并入全局去重集合
@@ -267,6 +321,15 @@ def _exec_tools(state: AgentState, deps: dict[str, Any]) -> dict[str, Any]:
     if kb_called and kb_ok == 0:
         refused, reason = True, kb_reason or "low_confidence"
 
+    # 延迟拆解：多次检索的分段耗时累加（对比题拆分检索会调 2 次 query_kb）
+    ret_lat: dict[str, float] = {}
+    for r in results:
+        for k, v in (r.get("result") or {}).get("timings", {}).items():
+            key = f"retrieval_{k}"
+            ret_lat[key] = ret_lat.get(key, 0.0) + v
+        for k, v in (r.get("result") or {}).get("llm_timings", {}).items():
+            ret_lat[k] = ret_lat.get(k, 0.0) + v
+
     return {
         "tool_results": results,
         "chunks": chunk_dicts,
@@ -274,6 +337,7 @@ def _exec_tools(state: AgentState, deps: dict[str, Any]) -> dict[str, Any]:
         "refused": refused,
         "refuse_reason": reason,
         "trace": [{"node": "exec_tools", "tools": [r["tool"] for r in results]}],
+        "latency": _lat(state, **ret_lat),
     }
 
 
@@ -304,11 +368,18 @@ def _generate(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dict[s
     ]
     attempt = state.get("retry_count", 0)
     parts: list[str] = []
+    t0 = time.perf_counter()
+    ttft: float | None = None
     for delta in llm.chat_stream(messages, max_tokens=8192):
+        if ttft is None:
+            ttft = time.perf_counter() - t0
         parts.append(delta)
         _emit(deps, {"type": "token", "text": delta, "attempt": attempt})
+    gen_total = time.perf_counter() - t0
     answer = "".join(parts).strip()
     _emit(deps, {"type": "citations", "citations": state.get("citations") or []})
+    # 重试场景：TTFT 取首次生成（用户感知的首 token），生成耗时累加（重试同样烧 LLM）
+    prev = state.get("latency") or {}
     return {
         "answer": answer,
         "messages": [{"role": "assistant", "content": answer}],
@@ -320,6 +391,11 @@ def _generate(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dict[s
                 "finish_reason": getattr(llm, "last_finish_reason", None),
             }
         ],
+        "latency": _lat(
+            state,
+            generate_ttft=prev.get("generate_ttft", ttft or 0.0),
+            llm_generate=prev.get("llm_generate", 0.0) + gen_total,
+        ),
     }
 
 
@@ -341,6 +417,7 @@ def _refuse(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dict[str
         {"role": "user", "content": f"用户问题：{state['query']}\n拒答原因：{reason}"},
     ]
     parts: list[str] = []
+    t0 = time.perf_counter()
     for delta in llm.chat_stream(messages, max_tokens=2048):
         parts.append(delta)
         _emit(deps, {"type": "token", "text": delta, "attempt": 0})
@@ -352,6 +429,7 @@ def _refuse(state: AgentState, llm: LLMClient, deps: dict[str, Any]) -> dict[str
         "answer": answer,
         "messages": [{"role": "assistant", "content": answer}],
         "trace": [{"node": "refuse", "reason": reason}],
+        "latency": _lat(state, llm_refuse=time.perf_counter() - t0),
     }
 
 
@@ -362,21 +440,29 @@ def _validate(state: AgentState) -> dict[str, Any]:
     last-write-wins，残留的 retry_feedback 会让条件边永远拉回 generate。
     """
     chunks = state.get("chunks") or []
+    t0 = time.perf_counter()
     problems = validate_citations(state.get("answer", ""), chunks)
+    v_secs = time.perf_counter() - t0
     if not problems:
-        return {"retry_feedback": "", "trace": [{"node": "validate", "ok": True}]}
+        return {
+            "retry_feedback": "",
+            "trace": [{"node": "validate", "ok": True}],
+            "latency": _lat(state, validate=v_secs),
+        }
     retry = state.get("retry_count", 0)
     if retry < MAX_RETRY:
         return {
             "retry_count": retry + 1,
             "retry_feedback": "；".join(problems),
             "trace": [{"node": "validate", "ok": False, "retry": retry + 1, "problems": problems}],
+            "latency": _lat(state, validate=v_secs),
         }
     return {
         "refused": True,
         "refuse_reason": "citation_failed",
         "retry_feedback": "",
         "trace": [{"node": "validate", "ok": False, "exhausted": True, "problems": problems}],
+        "latency": _lat(state, validate=v_secs),
     }
 
 
@@ -508,6 +594,13 @@ class KBAgent:
             "rewritten_query": final.get("rewritten_query", query),
             "trace": final.get("trace") or [],
             "cached": False,
+            "latency_breakdown": final.get("latency") or {},
+            # 检索快照（D30 失败归因：Hit 判定与 gold 位置分析）
+            "retrieved": [
+                {"chunk_id": c["chunk_id"], "citation": c.get("citation"),
+                 "title": c["title"], "rerank_score": c.get("rerank_score")}
+                for c in final.get("chunks") or []
+            ],
         }
         # 写缓存（精简四要素，trace 不落库）：输入级错误不缓存（key 会被空话术污染）
         if cacheable and result["refuse_reason"] not in INPUT_ERROR_ANSWERS:
@@ -522,5 +615,6 @@ class KBAgent:
                 },
             )
         if events is not None:
+            events.put({"type": "latency", "breakdown": result["latency_breakdown"]})
             events.put({"type": "done", **result})
         return result

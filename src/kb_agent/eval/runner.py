@@ -63,29 +63,21 @@ class EvalRunner:
         self.threshold = threshold
         self.retriever = HybridRetriever(store, embedder, bm25, reranker)
 
-    def _retrieve(self, query: str, roles: list[str]) -> tuple[list[RetrievedChunk], dict[str, float]]:
+    def _retrieve(
+        self, query: str, roles: list[str]
+    ) -> tuple[list[RetrievedChunk], dict[str, float], list[str]]:
         timings: dict[str, float] = {}
-        if self.mode == "hybrid":
-            return (
-                self.retriever.retrieve(query, roles=roles, top_k=self.top_k, timings=timings),
-                timings,
-            )
-        if self.mode == "hybrid_no_rerank":
-            return (
-                self.retriever.retrieve(
-                    query, roles=roles, top_k=self.top_k, with_rerank=False, timings=timings
-                ),
-                timings,
-            )
-        if self.mode == "dense":
-            qvec = self.embedder.encode_query(query)
-            hits = self.store.query_dense_only(qvec.tolist(), roles=roles, limit=self.top_k)
-            return [HybridRetriever._to_chunk(h) for h in hits], timings
-        qvec = self.embedder.encode_query(query)
-        hits = self.store.query_sparse_only(
-            self.bm25.encode(query, for_query=True), roles=roles, limit=self.top_k
+        pre_ids: list[str] = []
+        chunks = self.retriever.retrieve(
+            query,
+            roles=roles,
+            top_k=self.top_k,
+            with_rerank=self.mode == "hybrid",
+            mode=self.mode,
+            timings=timings,
+            pre_rerank_ids=pre_ids,
         )
-        return [HybridRetriever._to_chunk(h) for h in hits], timings
+        return chunks, timings, pre_ids
 
     def run(self, items: list[QAItem]) -> EvalReport:
         report = EvalReport(mode=self.mode, total=len(items))
@@ -95,7 +87,7 @@ class EvalRunner:
 
         for idx, item in enumerate(items):
             try:
-                chunks, timings = self._retrieve(item.question, item.roles)
+                chunks, timings, pre_ids = self._retrieve(item.question, [item.role])
                 for stage, secs in timings.items():
                     lat_stage.setdefault(stage, []).append(secs)
                 refused, reason = refuse_decision(chunks, threshold=self.threshold)
@@ -106,15 +98,18 @@ class EvalRunner:
                 # top-k 分数快照：D14 阈值扫描离线重算用（rerank 分缺省退回 rrf）
                 report.per_item.append(
                     {
-                        "id": item.id,
-                        "category": item.category,
+                        "id": item.qa_id,
+                        "category": item.scenario_type,
+                        "difficulty": item.difficulty,
                         "question": item.question,
-                        "roles": item.roles,
+                        "roles": [item.role],
                         "expect_refusal": item.expect_refusal,
                         "refused": refused,
                         "refuse_reason": reason,
                         "hit": hit,
                         "rr": rr,
+                        "gold_chunk_ids": item.gold_chunk_ids,
+                        "pre_rerank_ids": pre_ids,
                         "top1": chunks[0].title if chunks else None,
                         "top5_scores": [
                             c.rerank_score if c.rerank_score is not None else c.rrf_score
@@ -135,10 +130,10 @@ class EvalRunner:
                     judge_total += 1
                     judge_hits += int(relevant == hit)
                     judge_cases.append(
-                        {"id": item.id, "relevant": relevant, "hit": hit, "top1": chunks[0].title}
+                        {"id": item.qa_id, "relevant": relevant, "hit": hit, "top1": chunks[0].title}
                     )
             except Exception as e:  # noqa: BLE001
-                report.failures.append(f"{item.id}: {e}")
+                report.failures.append(f"{item.qa_id}: {e}")
 
         n_hit = sum(1 for p in report.per_item if p["hit"])
         n_gold = sum(1 for i in items if i.gold_chunk_ids)

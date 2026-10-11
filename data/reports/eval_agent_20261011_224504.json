@@ -1,0 +1,98 @@
+{
+  "qa_set": "D:\\vscode\\agent code\\enterprise-kb-agent\\data\\qa_sets\\v2",
+  "judge_enabled": true,
+  "ids_filter": [
+    "qa-103"
+  ],
+  "cold": {
+    "answer_accuracy": 1.0,
+    "answer_judged": 1,
+    "answer_total": 1,
+    "refusal": {
+      "accuracy": 1.0,
+      "refuse_correct": 0,
+      "refuse_total": 0,
+      "answer_correct": 1,
+      "answer_total": 1,
+      "false_answer_rate": 0.0,
+      "false_refusal_rate": 0.0
+    },
+    "citations": {
+      "covered": 1,
+      "total": 1
+    },
+    "latency_mean": 18.141808599997603,
+    "ttft_mean": 2.2491642000022694,
+    "wall_secs": 19.11004948616028,
+    "leaks": [],
+    "failures": [],
+    "by_scenario": {
+      "single_hop": {
+        "n": 1,
+        "correct": 1,
+        "judged": 1,
+        "hit": 1,
+        "n_gold": 1
+      }
+    },
+    "error_analysis": {
+      "gold_missed": [],
+      "rerank_demoted": [],
+      "gen_error": [],
+      "false_refusal": [],
+      "leak": [],
+      "chunk_truncated": [],
+      "ambiguous": []
+    },
+    "per_item": [
+      {
+        "id": "qa-103",
+        "category": "single_hop",
+        "difficulty": "easy",
+        "question": "公司提供免费午餐或者餐补吗？",
+        "role": "employee",
+        "answer_points": [
+          "公司不提供免费午餐",
+          "餐补 30 元/工作日，随当月工资发放",
+          "交通补贴 200 元/月、通讯补贴 100 元/月"
+        ],
+        "expect_refusal": false,
+        "refused": false,
+        "gold_chunk_ids": [
+          "1aea11f6-4136-5e02-a5a3-a3279958a3f5",
+          "8dee9605-1bc5-5d39-9abe-2fd320fd5b39"
+        ],
+        "retrieved_ids": [
+          "c42e9bb4-3fba-57a0-ad36-695af7e06546",
+          "633d946b-a33c-5ad7-b551-f5357ccf3d95",
+          "f8f89c4c-1c79-575b-a86b-6b4894a43791",
+          "08922514-dce0-5189-ad7d-9a7cb675eb45",
+          "1aea11f6-4136-5e02-a5a3-a3279958a3f5",
+          "0a4f0c35-3a22-5e23-a2cf-cc698bc31a96",
+          "54b26935-d390-5960-b12c-4ba4622fd62b",
+          "cee9c78f-63f2-5f2e-b031-b4f2ffd05b24",
+          "19397598-dbb9-5fa4-8ae0-4e9f5f370979",
+          "a8ac9a98-9089-5f07-9fae-0c2cebd3e0e2",
+          "487d2138-ab68-5c20-8079-27ad1cb95ec2",
+          "82969573-c2fc-5e59-b834-5a4dca7fcb7c"
+        ],
+        "hit": true,
+        "latency": 18.142,
+        "ttft": 2.249,
+        "turns_refused": [],
+        "judge_correct": true,
+        "judge_votes": 0,
+        "answer": "公司提供餐补，不提供免费午餐。\n\n- 餐补标准为 30 元/工作日，随当月工资发放[5]。\n- 制度中未提及免费午餐等其他形式[5]。"
+      }
+    ]
+  },
+  "warm": {
+    "cache": {
+      "hits": 1,
+      "total": 1,
+      "rate": 1.0,
+      "latency_mean": 0.0013821000029565766
+    },
+    "wall_secs": 0.0014231204986572266
+  }
+}

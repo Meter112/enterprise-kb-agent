@@ -23,11 +23,17 @@ dependencies = [
     "streamlit>=1.65.0",
 ]
 
+[project.optional-dependencies]
+bm25-baseline = [
+    "rank-bm25>=0.2.2",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "ruff>=0.5",
+    "rank-bm25>=0.2.2",  # BM25 对照类单测用（也是 bm25-baseline extra 的内容）
 ]
 
 [build-system]

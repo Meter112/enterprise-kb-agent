@@ -11,6 +11,8 @@ import asyncio
 import json
 import queue
 import threading
+import time
+from collections import deque
 from functools import lru_cache
 from typing import Any
 
@@ -28,6 +30,17 @@ from kb_agent.store.qdrant_store import QdrantStore
 
 ROLES = ("public", "contractor", "employee", "admin")
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+# /metrics 延迟统计：进程内滑动窗口（每请求总耗时，从请求进入到 done 发出）。
+# 单进程单窗口，P50/P95 语义为"最近 500 条请求"
+_latency_window: deque[float] = deque(maxlen=500)
+
+
+def _percentile(sorted_vals: list[float], p: float) -> float | None:
+    if not sorted_vals:
+        return None
+    idx = min(len(sorted_vals) - 1, int(p * len(sorted_vals)))
+    return round(sorted_vals[idx], 3)
 
 
 def _build_checkpointer():
@@ -80,6 +93,18 @@ def _sse(event: dict[str, Any]) -> str:
     return f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
+@router.get("/metrics")
+async def metrics() -> dict[str, Any]:
+    """延迟统计：最近 500 条请求的 P50/P95 与样本数（进程内窗口，重启清零）。"""
+    vals = sorted(_latency_window)
+    return {
+        "window": _latency_window.maxlen,
+        "count": len(vals),
+        "p50_s": _percentile(vals, 0.5),
+        "p95_s": _percentile(vals, 0.95),
+    }
+
+
 @router.post("")
 async def chat(req: ChatRequest) -> StreamingResponse:
     if req.role not in ROLES:
@@ -89,6 +114,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 
     agent = _get_agent()
     events: queue.Queue[dict[str, Any] | None] = queue.Queue()
+    t_start = time.perf_counter()
 
     def run() -> None:
         try:
@@ -96,6 +122,7 @@ async def chat(req: ChatRequest) -> StreamingResponse:
         except Exception as e:  # noqa: BLE001 - 事件带错误，SSE 正常关闭
             events.put({"type": "error", "detail": str(e)})
         finally:
+            _latency_window.append(time.perf_counter() - t_start)
             events.put(None)  # 结束哨兵
 
     threading.Thread(target=run, daemon=True).start()

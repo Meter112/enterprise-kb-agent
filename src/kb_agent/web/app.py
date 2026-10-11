@@ -90,13 +90,22 @@ def render_answer(msg: dict) -> None:
 
 
 def render_tool_trace(msg: dict) -> None:
-    """工具轨迹折叠面板：检索候选 + 事件序列（面试展示友好）。"""
+    """工具轨迹折叠面板：延迟拆解 + 检索候选 + 事件序列（面试展示友好）。"""
     meta = msg.get("meta") or {}
     trace = meta.get("trace") or {}
     if not trace:
         return
     with st.expander("🔎 工具轨迹", expanded=False):
         st.write(f"事件序列：`{' → '.join(trace['event_types'])}`")
+        breakdown = trace.get("latency_breakdown") or {}
+        if breakdown:
+            rows = [
+                (label, f"{secs:.2f}s")
+                for label, secs in sorted(
+                    breakdown.items(), key=lambda kv: kv[1], reverse=True
+                )
+            ]
+            st.markdown("**延迟拆解**：" + "，".join(f"{label} {secs}" for label, secs in rows))
         for c in trace.get("candidates", []):
             st.markdown(
                 f"- **{c['citation']}**（rerank {c['rerank_score']:.2f}）\n\n"
@@ -203,12 +212,16 @@ if question:
             status.empty()
 
         candidates = []
+        latency_breakdown = {}
         for ev in events:
             if ev["type"] == "retrieved":
                 candidates = ev.get("candidates", [])
+            elif ev["type"] == "latency":
+                latency_breakdown = ev.get("breakdown", {})
         trace = {
             "event_types": [e["type"] for e in events if e["type"] != "token"],
             "candidates": candidates,
+            "latency_breakdown": latency_breakdown,
         }
 
     st.session_state.messages.append(

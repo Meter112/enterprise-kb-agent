@@ -1,0 +1,41 @@
+{
+  "qa_set": "D:\\vscode\\agent code\\enterprise-kb-agent\\data\\qa_sets\\qa_set_v1.json",
+  "top_k": 5,
+  "wall_secs": 333.1,
+  "note": "rank_bm25 组只报 Hit/MRR：分数尺度与 rerank 不同，0.7 拒答阈值不适用",
+  "results": {
+    "dense": {
+      "hit_at_5": 0.7777777777777778,
+      "mrr": 0.6574074074074074,
+      "refusal_accuracy": 0.65625,
+      "false_answer_rate": 1.0,
+      "latency_per_query": 0.41503705625018483
+    },
+    "sparse": {
+      "hit_at_5": 0.6296296296296297,
+      "mrr": 0.4938271604938272,
+      "refusal_accuracy": 0.65625,
+      "false_answer_rate": 1.0,
+      "latency_per_query": 0.39875148125076976
+    },
+    "hybrid_no_rerank": {
+      "hit_at_5": 0.7037037037037037,
+      "mrr": 0.6111111111111112,
+      "refusal_accuracy": 0.65625,
+      "false_answer_rate": 1.0,
+      "latency_per_query": 0.35672424374990896
+    },
+    "hybrid": {
+      "hit_at_5": 0.7407407407407407,
+      "mrr": 0.5598765432098766,
+      "refusal_accuracy": 0.9375,
+      "false_answer_rate": 0.18181818181818182,
+      "latency_per_query": 8.896768675000203
+    },
+    "rank_bm25": {
+      "hit_at_5": 0.6666666666666666,
+      "mrr": 0.48148148148148157,
+      "n_gold": 27
+    }
+  }
+}

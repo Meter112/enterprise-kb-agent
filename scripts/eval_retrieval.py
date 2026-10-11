@@ -25,7 +25,7 @@ from kb_agent.store.qdrant_store import QdrantStore
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--qa", default=str(settings.data_dir / "qa_sets" / "qa_set_v1.json"))
+    parser.add_argument("--qa", default=str(settings.data_dir / "qa_sets" / "v2"))
     parser.add_argument("--mode", default="hybrid",
                         choices=["hybrid", "hybrid_no_rerank", "dense", "sparse"])
     parser.add_argument("--judge", type=float, default=0.0, help="flash 抽查比例 0-1")

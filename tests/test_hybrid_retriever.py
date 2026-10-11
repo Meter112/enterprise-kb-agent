@@ -22,11 +22,19 @@ class _Hit:
 
 class _FakeStore:
     def __init__(self) -> None:
-        self.calls: list[tuple[list[str], int]] = []
+        self.calls: list[tuple[str, list[str], int]] = []
 
     def query_hybrid(self, dense, sparse, roles, limit=50):  # noqa: ANN001
-        self.calls.append((list(roles), limit))
+        self.calls.append(("hybrid", list(roles), limit))
         return [_Hit("a", "文档A", 0.9), _Hit("b", "文档B", 0.8), _Hit("c", "文档C", 0.7)]
+
+    def query_dense_only(self, dense, roles, limit=50):  # noqa: ANN001
+        self.calls.append(("dense", list(roles), limit))
+        return [_Hit("a", "文档A", 0.9), _Hit("b", "文档B", 0.8)]
+
+    def query_sparse_only(self, sparse, roles, limit=50):  # noqa: ANN001
+        self.calls.append(("sparse", list(roles), limit))
+        return [_Hit("c", "文档C", 0.7)]
 
 
 class _FakeEmbedder:
@@ -62,8 +70,24 @@ def test_retrieve_reranks_and_truncates() -> None:
 def test_retrieve_passes_roles_and_limit_to_store() -> None:
     retriever, store = _make()
     retriever.retrieve("测试", roles=["contractor"], top_k=1)
-    roles, limit = store.calls[0]
-    assert roles == ["contractor"] and limit == 20  # 召回用 top_n，截断在重排后
+    kind, roles, limit = store.calls[0]
+    assert kind == "hybrid" and roles == ["contractor"] and limit == 20  # 召回用 top_n，截断在重排后
+
+
+def test_retrieve_dense_mode_skips_rerank() -> None:
+    retriever, store = _make()
+    chunks = retriever.retrieve("测试", roles=["public"], top_k=2, mode="dense")
+    assert store.calls[0][0] == "dense"
+    assert [c.title for c in chunks] == ["文档A", "文档B"]  # 保留 RRF 序，不重排
+    assert all(c.rerank_score is None for c in chunks)
+
+
+def test_retrieve_sparse_mode_skips_rerank() -> None:
+    retriever, store = _make()
+    chunks = retriever.retrieve("测试", roles=["public"], top_k=2, mode="sparse")
+    assert store.calls[0][0] == "sparse"
+    assert [c.title for c in chunks] == ["文档C"]
+    assert all(c.rerank_score is None for c in chunks)
 
 
 def test_retrieve_without_rerank_keeps_rrf_order() -> None:

@@ -30,4 +30,6 @@ class AgentState(TypedDict, total=False):
     refuse_reason: str
     retry_count: int
     retry_feedback: str
+    # 延迟拆解（D29）：节点串行执行，各节点读-改-写本 dict（键：retrieval_* / llm_* / validate / generate_ttft）
+    latency: dict[str, float]
     trace: Annotated[list[dict[str, Any]], operator.add]

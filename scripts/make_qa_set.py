@@ -1,14 +1,19 @@
-"""构造评估 QA 集：32 条 × 4 场景，gold chunk 从实时索引解析并快照。
+"""构造评估 QA 集 v1：32 条 × 4 场景，gold chunk 从实时索引解析并快照。
 
 gold 解析方式：按 (文档标题, 章节关键词) 在索引 payload 中匹配 chunk，
 取全部命中的 point id 作为 gold 集合（Hit@5/MRR 精确匹配）。
+
+D30 起 v1 集仅作历史基线：v2 集由 scripts/migrate_qa_set.py（本文件产物迁移）
++ scripts/gen_qa_set.py 生成，评估默认走 data/qa_sets/v2/。
 
 用法: uv run python scripts/make_qa_set.py
 """
 from __future__ import annotations
 
+import json
+
 from kb_agent.config import settings
-from kb_agent.eval.qa_set import QAItem, save_qa_set
+from kb_agent.eval.gold_resolver import load_payload_index, resolve_gold
 from kb_agent.store.qdrant_store import QdrantStore
 
 OUT = settings.data_dir / "qa_sets" / "qa_set_v1.json"
@@ -86,63 +91,36 @@ QA_SPECS: list[tuple] = [
 ]
 
 
-def resolve_gold(store: QdrantStore, specs: list[tuple]) -> tuple[list[QAItem], list[str]]:
-    """滚动全量 payload，按 (标题, 关键词) 解析 gold point id 集合。"""
-    points: dict[str, dict] = {}
-    offset = None
-    while True:
-        page, offset = store.client.scroll(
-            collection_name=store.collection,
-            with_payload=True,
-            with_vectors=False,
-            limit=256,
-            offset=offset,
-        )
-        for p in page:
-            points[str(p.id)] = p.payload or {}
-        if offset is None:
-            break
-
-    items: list[QAItem] = []
-    warnings: list[str] = []
-    for qid, category, question, roles, hint, expect_refusal, targets in specs:
-        gold: list[str] = []
-        for title, keywords in targets:
-            matched = []
-            for pid, pl in points.items():
-                if pl.get("title") != title:
-                    continue
-                haystack = " ".join(pl.get("title_path") or []) + " " + (pl.get("text") or "")[:300]
-                if not keywords or any(k in haystack for k in keywords):
-                    matched.append(pid)
-            gold.extend(matched)
-            if not matched:
-                warnings.append(f"{qid}: 《{title}》未解析到 gold chunk（关键词 {keywords}）")
-        items.append(
-            QAItem(
-                id=qid,
-                category=category,
-                question=question,
-                roles=roles,
-                answer_hint=hint,
-                expect_refusal=expect_refusal,
-                gold_chunk_ids=sorted(set(gold)),
-            )
-        )
-    return items, warnings
-
-
 def main() -> None:
-    store = QdrantStore()
-    items, warnings = resolve_gold(store, QA_SPECS)
+    points = load_payload_index(QdrantStore())
+    items: list[dict] = []
+    warnings: list[str] = []
+    for qid, category, question, roles, hint, expect_refusal, targets in QA_SPECS:
+        gold, gw = resolve_gold(points, targets)
+        warnings.extend(f"{qid}: {w}" for w in gw)
+        items.append(
+            {
+                "id": qid,
+                "category": category,
+                "question": question,
+                "roles": roles,
+                "answer_hint": hint,
+                "expect_refusal": expect_refusal,
+                "gold_chunk_ids": gold,
+            }
+        )
     meta = {
         "version": 1,
         "total": len(items),
-        "by_category": {c: sum(1 for i in items if i.category == c) for c in
+        "by_category": {c: sum(1 for i in items if i["category"] == c) for c in
                         ("single_hop", "multi_doc", "no_answer", "permission")},
-        "gold_total": sum(len(i.gold_chunk_ids) for i in items),
+        "gold_total": sum(len(i["gold_chunk_ids"]) for i in items),
     }
-    save_qa_set(items, OUT, meta)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(
+        json.dumps({"meta": meta, "items": items}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(f"[done] QA 集 {len(items)} 条 → {OUT}")
     print(f"[meta] {meta}")
     for w in warnings:
