@@ -1,8 +1,11 @@
 # enterprise-kb-agent
 
-企业级智能知识库问答 Agent（RAG + Agent）。求职作品集项目：从语料生成、混合检索、拒答阈值标定到手写 Agent 状态机、权限隔离、缓存加速、端到端评估，四周完整走通一个生产形态的知识库问答系统。
+企业级智能知识库问答 Agent（RAG + Agent）。对 52 篇企业文档（制度 / API / FAQ，含角色权限标签）提供带引用的问答：混合检索（BGE-M3 + BM25 + RRF + rerank）召回，手写 LangGraph 状态机完成工具路由、拒答判定与引用校验重试，FastAPI SSE 流式返回，Streamlit 提供交互界面。权限隔离端到端 0 泄漏，Redis L1 缓存 warm 命中 0.001s。
 
-**一句话**：52 篇企业文档（制度/API/FAQ，含角色权限标签）→ 混合检索（BGE-M3 + 手写 BM25 + RRF + rerank）→ 手写 StateGraph Agent（工具路由 / 拒答 / 引用校验重试）→ 带 [n] 引用的流式回答，权限隔离 0 泄漏，L1 缓存命中 0.001s。
+- **混合检索**：dense（BGE-M3）+ sparse（手写 jieba BM25）双路召回，Qdrant RRF 融合，bge-reranker-base 重排
+- **Agent**：手写 StateGraph（route → rewrite → tool_router → exec_tools → generate → validate → refuse），支持多轮指代、对比题自动拆分检索、文档摘要
+- **安全**：语料级 role 标签，检索期向上兼容权限过滤；阈值 0.7 拒答 + 引用校验失败重试（≤2）
+- **体验**：SSE 事件流（检索轨迹 / token 增量 / 引用）+ Streamlit 逐 token 渲染；L1 精确缓存加速重复问答
 
 ## 架构
 
@@ -61,13 +64,15 @@ flowchart LR
 ### 方式一：Docker Compose 一键启动（推荐）
 
 ```bash
-cp .env.example .env        # 填入 DEEPSEEK_API_KEY
+uv sync                                  # 下载模型权重用（Python 3.13）
+cp .env.example .env                     # 填入 DEEPSEEK_API_KEY
+uv run python scripts/download_models.py # BGE-M3 + reranker → data/models/（约 2.3GB，不入库）
 docker compose up -d --build
 # Web UI:  http://localhost:8501
 # API:     http://localhost:8000/docs   （/health 检查服务与索引状态）
 ```
 
-四容器（qdrant + redis-stack + api + web），语料与模型权重随仓库 `data/` 挂载。新环境首次启动时 Qdrant 索引为空，需先执行一次索引（容器内已具备依赖）：
+四容器（qdrant + redis-stack + api + web），语料与模型权重通过 `data/` 目录挂载。新环境首次启动时 Qdrant 索引为空，需先执行一次索引（容器内已具备依赖）：
 
 ```bash
 docker compose exec api python scripts/index_corpus.py   # 增量索引 52 篇语料 → 370 chunks
@@ -89,12 +94,37 @@ make web                                 # Streamlit :8501
 
 > 模型权重约 2.3GB，国内网络经 hf-mirror 镜像下载，支持断点续传。
 
-## Web UI 使用
+## 使用方式
+
+### Web UI
 
 - **问答**：输入问题 → 流式逐 token 渲染 + 引用高亮 → 展开工具轨迹面板（router 选择了哪些工具、每次检索的候选与 rerank 分数）
 - **角色切换**：public / contractor / employee / admin 四档，权限隔离实时生效（如 contractor 问年假会被拒答）
 - **多轮对话**：同一 session 内支持指代（「那病假呢？」）
 - **文档上传**：拖入 PDF/MD → 自动 chunk + 增量索引
+
+### HTTP API
+
+`POST /chat` 以 SSE 流式返回事件（`tool_call` → `retrieved` → `token` → `citations` / `refused`）：
+
+```bash
+# 单轮问答（role: public / contractor / employee / admin）
+curl -N -X POST localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"年假有几天？","role":"employee"}'
+
+# 多轮对话（同一 session_id 内支持指代）
+curl -N -X POST localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"那病假呢？","role":"employee","session_id":"demo"}'
+
+# 文档摘要
+curl -N -X POST localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"总结一下《差旅报销制度》","role":"employee"}'
+```
+
+其他端点：`POST /documents`（上传索引）/ `DELETE /documents/{doc_id}` / `GET /health` / `GET /chat/metrics`（延迟 P50/P95 窗口）。
 
 ## 评估结果
 
@@ -113,8 +143,8 @@ make web                                 # Streamlit :8501
 复现评估：
 
 ```bash
-uv run python scripts/eval_retrieval.py   # Week 2 检索基线（Hit@5/MRR/拒答双面）
-uv run python scripts/eval_agent.py       # Week 4 Agent 端到端（cold+warm 两轮 + judge）
+uv run python scripts/eval_retrieval.py   # 检索基线（Hit@5/MRR/拒答双面）
+uv run python scripts/eval_agent.py       # Agent 端到端（cold+warm 两轮 + judge）
 ```
 
 ## 项目结构
@@ -130,25 +160,27 @@ src/kb_agent/
 ├── web/            # Streamlit UI
 └── eval/           # QA 集 / 指标 / flash judge / AgentEvalRunner
 data/
-├── corpus/         # 52 篇生成语料（MD/PDF/TXT × 4 类 × role 标签）
-├── qa_sets/        # 32 条评估题（gold chunk + 答案要点 + 权限期望）
+├── corpus/         # 52 篇语料（制度/API/FAQ/白皮书 × MD/PDF/TXT × role 标签）
+├── qa_sets/v2/     # 123 条评估题 × 6 场景（gold chunk + 答案要点 + 权限期望）
 ├── index_cache/    # BM25 参数 + kb_version
 └── reports/        # 评估报告 JSON
-docs/               # plan（四周计划）/ eval_report / manual_test_report / benchmarks
+docs/               # 评估报告（eval_report）/ 基准（benchmarks）/ 人工测试记录
 ```
 
 ## 技术栈
 
 Python 3.13 / uv · langgraph（手写状态机）· Qdrant（RRF 混合检索）· BGE-M3 + bge-reranker-base（FlagEmbedding）· jieba（手写 BM25）· FastAPI + SSE · Streamlit · Redis（checkpoint + L1 缓存）· DeepSeek（chat 生成 / flash 路由与 judge）· Docker Compose · pytest + ruff
 
-## 面试亮点索引
+## 已知限制
 
-开发过程中真实踩过并修复的问题（均可展开讲，细节见 docs/plan.md 进度快照）：
+- **fail-open 主题错位**：permission 场景下目标文档被权限过滤挡住，可见文档的高分弱相关可能越过拒答阈值（检索层 6/19，评估报告 §10.1）——方向是生成前主题一致性校验，尚未实施
+- **多 gold 覆盖不全**：部分考题需要多个 chunk 才能覆盖全部答案要点，检索深度不足时生成只能覆盖已召回的部分（评估报告 §11.3）
+- **延迟**：冷路径约 7.1s/条（检索），大头是 CPU 上的 reranker（约 6.8s）——方向是 GPU 或蒸馏小模型
+- **LLM judge 噪音**：flash 模型对表格类/边界答案判分有噪音，评估框架以多数表决缓解
 
-1. **对比题拆分检索**：LLM 路由不遵守拆分规则 → exec 层确定性正则兜底（`A和B的X有什么区别` → 两侧独立 query），多路结果按 chunk_id 去重合并
-2. **reranker 对约束词不敏感**：正确答案 RRF 排第 2 却被 rerank 压到第 6 截断 → 候选数 5→8 兜底
-3. **拒答阈值标定方法**：离线重算 top-5 分数扫描阈值（12 阈值 × 32 题 1 秒完成），选帕累托最优下界
-4. **langgraph last-write-wins 陷阱**：validate 通过后残留 retry_feedback 导致死循环 → 通过分支显式清空
-5. **Redis 重启后 RediSearch 索引丢失**：checkpoint 数据在但模块索引不持久化 → 服务启动显式 `saver.setup()` 幂等重建
-6. **Docker 镜像 18GB→4.68GB**：`--no-install-package` 不剪传递依赖（nvidia-*/cuda-* 逐个排除）；torch 2.6 CPU 与 transformers 5.x 兼容 bug → sitecustomize 补丁
-7. **评估口径设计**：漏拒用「是否实质回答」而非 refused 标志（软拒答话术不算泄漏）；judge 边界噪音用多数表决
+## 测试
+
+```bash
+make test    # pytest 单测（全部 fake 化，不依赖真实模型/索引/Redis）
+make lint    # ruff
+```
