@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from kb_agent.api.chat import router as chat_router
 from kb_agent.api.documents import router as documents_router
@@ -13,6 +14,13 @@ from kb_agent.config import settings
 from kb_agent.store.qdrant_store import QdrantStore
 
 app = FastAPI(title="kb-agent", version="0.1.0")
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 app.include_router(documents_router)
 app.include_router(chat_router)
 

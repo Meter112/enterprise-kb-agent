@@ -1,18 +1,18 @@
 # enterprise-kb-agent
 
-企业级智能知识库问答 Agent（RAG + Agent）。对 52 篇企业文档（制度 / API / FAQ，含角色权限标签）提供带引用的问答：混合检索（BGE-M3 + BM25 + RRF + rerank）召回，手写 LangGraph 状态机完成工具路由、拒答判定与引用校验重试，FastAPI SSE 流式返回，Streamlit 提供交互界面。权限隔离端到端 0 泄漏，Redis L1 缓存 warm 命中 0.001s。
+企业级智能知识库问答 Agent（RAG + Agent）。对 52 篇企业文档（制度 / API / FAQ，含角色权限标签）提供带引用的问答：混合检索（BGE-M3 + BM25 + RRF + rerank）召回，手写 LangGraph 状态机完成工具路由、拒答判定与引用校验重试，FastAPI SSE 流式返回，React（TypeScript）与 Streamlit 双前端提供交互界面。权限隔离端到端 0 泄漏，Redis L1 缓存 warm 命中 0.001s。
 
 - **混合检索**：dense（BGE-M3）+ sparse（手写 jieba BM25）双路召回，Qdrant RRF 融合，bge-reranker-base 重排
 - **Agent**：手写 StateGraph（route → rewrite → tool_router → exec_tools → generate → validate → refuse），支持多轮指代、对比题自动拆分检索、文档摘要
 - **安全**：语料级 role 标签，检索期向上兼容权限过滤；阈值 0.7 拒答 + 引用校验失败重试（≤2）
-- **体验**：SSE 事件流（检索轨迹 / token 增量 / 引用）+ Streamlit 逐 token 渲染；L1 精确缓存加速重复问答
+- **体验**：SSE 事件流（检索轨迹 / token 增量 / 引用）+ React / Streamlit 双前端逐 token 渲染；L1 精确缓存加速重复问答
 
 ## 架构
 
 ```mermaid
 flowchart LR
     subgraph 前端
-        UI[Streamlit UI<br/>流式渲染 / 角色切换 / 轨迹面板]
+        UI[React + Streamlit 双前端<br/>流式渲染 / 角色切换 / 轨迹面板]
     end
     subgraph 服务层
         API[FastAPI /chat SSE<br/>事件流: tool_call → retrieved → token → citations]
@@ -68,8 +68,9 @@ uv sync                                  # 下载模型权重用（Python 3.13�
 cp .env.example .env                     # 填入 DEEPSEEK_API_KEY
 uv run python scripts/download_models.py # BGE-M3 + reranker → data/models/（约 2.3GB，不入库）
 docker compose up -d --build
-# Web UI:  http://localhost:8501
-# API:     http://localhost:8000/docs   （/health 检查服务与索引状态）
+# Web UI（Streamlit）: http://localhost:8501
+# Web UI（React）:     make web-ui && 打开 http://localhost:8080
+# API:                 http://localhost:8000/docs   （/health 检查服务与索引状态）
 ```
 
 四容器（qdrant + redis-stack + api + web），语料与模型权重通过 `data/` 目录挂载。新环境首次启动时 Qdrant 索引为空，需先执行一次索引（容器内已具备依赖）：
@@ -90,7 +91,10 @@ uv run python scripts/download_models.py # BGE-M3 + reranker 权重 → data/mod
 uv run python scripts/index_corpus.py    # 增量索引（--rebuild 全量重建）
 make api                                 # FastAPI :8000
 make web                                 # Streamlit :8501
+cd frontend && npm ci && npm run dev     # React 前端 :5173（vite 代理 /chat → :8000，免 CORS）
 ```
+
+React 前端（`frontend/`）开发模式走 vite proxy；直连 API 的场景（如 `vite preview`）在 `.env` 配 `CORS_ORIGINS=["http://localhost:5173"]`。生产形态用 `make web-ui`（nginx 托管构建产物 + API 反代，8080 端口）。
 
 > 模型权重约 2.3GB，国内网络经 hf-mirror 镜像下载，支持断点续传。
 
@@ -98,10 +102,13 @@ make web                                 # Streamlit :8501
 
 ### Web UI
 
-- **问答**：输入问题 → 流式逐 token 渲染 + 引用高亮 → 展开工具轨迹面板（router 选择了哪些工具、每次检索的候选与 rerank 分数）
+React（:5173 dev / :8080 生产）与 Streamlit（:8501）双前端，功能对齐：
+
+- **问答**：输入问题 → 流式逐 token 渲染 + 引用高亮 → 展开工具轨迹面板（router 选择了哪些工具、每次检索的候选与 rerank 分数、延迟拆解）
 - **角色切换**：public / contractor / employee / admin 四档，权限隔离实时生效（如 contractor 问年假会被拒答）
 - **多轮对话**：同一 session 内支持指代（「那病假呢？」）
 - **文档上传**：拖入 PDF/MD → 自动 chunk + 增量索引
+- React 版额外修复：token 重试轮重置（不混拼）、error 事件可见反馈、对比题多路检索候选累积展示
 
 ### HTTP API
 
@@ -159,6 +166,10 @@ src/kb_agent/
 ├── api/            # FastAPI：/chat SSE 事件流 / /documents 上传 / /health
 ├── web/            # Streamlit UI
 └── eval/           # QA 集 / 指标 / flash judge / AgentEvalRunner
+frontend/           # React + TypeScript 前端（手写 SSE 解析 / 轨迹面板 / nginx 部署）
+├── src/lib/        # sse.ts（fetch ReadableStream 解析）+ api.ts
+├── src/state/      # chatReducer（useReducer 流式状态机）
+└── src/components/ # Sidebar / MessageList / AnswerView / ToolTrace / UploadPanel
 data/
 ├── corpus/         # 52 篇语料（制度/API/FAQ/白皮书 × MD/PDF/TXT × role 标签）
 ├── qa_sets/v2/     # 123 条评估题 × 6 场景（gold chunk + 答案要点 + 权限期望）
@@ -169,7 +180,7 @@ docs/               # 评估报告（eval_report）/ 基准（benchmarks）/ 人
 
 ## 技术栈
 
-Python 3.13 / uv · langgraph（手写状态机）· Qdrant（RRF 混合检索）· BGE-M3 + bge-reranker-base（FlagEmbedding）· jieba（手写 BM25）· FastAPI + SSE · Streamlit · Redis（checkpoint + L1 缓存）· DeepSeek（chat 生成 / flash 路由与 judge）· Docker Compose · pytest + ruff
+Python 3.13 / uv · langgraph（手写状态机）· Qdrant（RRF 混合检索）· BGE-M3 + bge-reranker-base（FlagEmbedding）· jieba（手写 BM25）· FastAPI + SSE · React + TypeScript + Vite · Streamlit · nginx · Redis（checkpoint + L1 缓存）· DeepSeek（chat 生成 / flash 路由与 judge）· Docker Compose · pytest + ruff + vitest
 
 ## 已知限制
 

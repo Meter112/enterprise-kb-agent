@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     redis_url: str = "redis://localhost:6379"
 
+    # --- CORS（React dev/preview 直连时放开；vite proxy / compose 同源反代无需配置） ---
+    cors_origins: list[str] = []
+
     # --- 路径 ---
     data_dir: Path = PROJECT_ROOT / "data"
     models_dir: Path = PROJECT_ROOT / "data" / "models"

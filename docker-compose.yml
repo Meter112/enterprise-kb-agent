@@ -60,6 +60,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  web-ui:
+    # React 前端（nginx 静态托管 + API 反代）。profiles 隔离：make up 默认不启动，
+    # 用 make web-ui 显式启动；产物在 host 构建（api 镜像内没有 node），volume 挂载。
+    image: nginx:1.27-alpine
+    container_name: kb-agent-web-ui
+    profiles: ["webui"]
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   qdrant_data:
   redis_data:
